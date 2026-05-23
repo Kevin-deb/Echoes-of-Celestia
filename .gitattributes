@@ -4,3 +4,5 @@ Assets/Generated/GlbVisuals/SpaceStationPortalMesh.asset filter=lfs diff=lfs mer
 Assets/Resources/SpaceStation/space_station_glb.bytes filter=lfs diff=lfs merge=lfs -text
 Assets/Resources/Klee/klee_glb.bytes filter=lfs diff=lfs merge=lfs -text
 Assets/Plane2D/Audio/Music/SongC.wav filter=lfs diff=lfs merge=lfs -text
+Assets/_Creepy_Cat/_3D[[:space:]]Scifi[[:space:]]Kit[[:space:]]Vol[[:space:]]3/Prefabs/Props/_Update[[:space:]]1.15-New[[:space:]]Mars[[:space:]]Terrain/Seamless_Mars_Normal_A.png filter=lfs diff=lfs merge=lfs -text
+Assets/_Creepy_Cat/_3D[[:space:]]Scifi[[:space:]]Kit[[:space:]]Vol[[:space:]]3/Prefabs/Props/_Update[[:space:]]1.15-New[[:space:]]Mars[[:space:]]Terrain/Seamless_Mars_Diffuse_A.png filter=lfs diff=lfs merge=lfs -text
