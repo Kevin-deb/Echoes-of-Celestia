@@ -72,3 +72,7 @@ InitTestScene*.unity*
 
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Third-party asset pack (kept locally; not distributed via GitHub)
+/[Aa]ssets/_Creepy_Cat/
+/[Aa]ssets/_Creepy_Cat.meta

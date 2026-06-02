@@ -51,6 +51,12 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
 
     // ── 运行时状态 ────────────────────────────────────────────────────────────
     static SpaceVehicleSeat s_activeVehicle;
+
+    /// <summary>玩家当前正在驾驶的载具 Transform；未驾驶时为 null。</summary>
+    public static Transform ActiveOccupiedTransform =>
+        s_activeVehicle != null ? s_activeVehicle.transform : null;
+
+    public static bool IsOccupied => s_activeVehicle != null;
     static GameObject       s_promptRoot;
     static Text             s_promptText;
 
