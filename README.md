@@ -16,4 +16,4 @@ Unity 游戏项目 — **Echoes of Celestia**（天穹回响）。
 
 本仓库仅包含可版本控制的 Unity 源文件（`Assets/`、`Packages/`、`ProjectSettings/` 等），不包含 `Library/`、`Temp/`、`Logs/` 等本地生成目录。
 
-第三方素材包 `Assets/_Creepy_Cat`（3D Scifi Kit）因体积与授权原因未纳入 GitHub。若从仓库克隆后 Hub 场景出现缺失引用，请在本地 Unity 项目中自行导入该素材包（与当前工作区相同的目录结构即可）。
+第三方素材包 `Assets/_Creepy_Cat`（3D Scifi Kit）与 `Assets/PixelFantasy` 因体积与授权原因未纳入 GitHub。若从仓库克隆后 Hub 场景或后续开发内容出现缺失引用，请在本地 Unity 项目中自行导入对应素材包（与当前工作区相同的目录结构即可）。

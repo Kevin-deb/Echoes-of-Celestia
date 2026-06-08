@@ -76,3 +76,5 @@ InitTestScene*.unity*
 # Third-party asset pack (kept locally; not distributed via GitHub)
 /[Aa]ssets/_Creepy_Cat/
 /[Aa]ssets/_Creepy_Cat.meta
+/[Aa]ssets/PixelFantasy/
+/[Aa]ssets/PixelFantasy.meta
