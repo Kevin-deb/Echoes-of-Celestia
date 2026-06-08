@@ -6,16 +6,17 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// 打开 Hub 场景时自动为 Oblivion 无人机安装 <see cref="PrimaryEnemy"/>，
-/// 并为 Player / 可驾驶载具安装 <see cref="HubCombatTarget"/>。
-/// 菜单：<b>Echoes / Hub / 安装敌人与战斗组件</b>
+/// Installs <see cref="PrimaryEnemy"/> on every Oblivion drone in the Hub scene and
+/// <see cref="HubCombatTarget"/> on the Player and driveable vehicles.
+/// Runs automatically whenever the Hub scene is opened.
+/// Menu: <b>Echoes / Hub / Install Enemy and Combat Components</b>
 /// </summary>
 [InitializeOnLoad]
 static class SpaceHubEnemySetupEditor
 {
     const string HubScenePath = "Assets/Scenes/Space/Hub.unity";
     const string MergedCopy   = "Tools/Hub.unity.merged";
-    const string MenuPath     = "Echoes/Hub/安装敌人与战斗组件";
+    const string MenuPath     = "Echoes/Hub/Install Enemy and Combat Components";
     const string DronePrefix  = "P_Oblivion_Drone_01";
 
     static SpaceHubEnemySetupEditor()
@@ -63,7 +64,7 @@ static class SpaceHubEnemySetupEditor
 
         EditorSceneManager.SaveScene(hubScene);
         UpdateMergedCopy();
-        Debug.Log("[EnemySetup] 敌人与战斗组件安装完成，场景已保存。");
+        Debug.Log("[EnemySetup] Enemy and combat components installed, scene saved.");
     }
 
     static bool SetupDronesRecursive(Transform node)
@@ -97,8 +98,8 @@ static class SpaceHubEnemySetupEditor
 
         target = go.AddComponent<HubCombatTarget>();
         var so = new SerializedObject(target);
-        so.FindProperty("maxHealth").intValue = maxHealth;
-        so.FindProperty("destroyOnDeath").boolValue = false;
+        so.FindProperty("maxHealth").intValue        = maxHealth;
+        so.FindProperty("destroyOnDeath").boolValue  = false;
         so.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(go);
         return true;
@@ -120,7 +121,7 @@ static class SpaceHubEnemySetupEditor
         }
         catch (System.Exception e)
         {
-            Debug.LogWarning($"[EnemySetup] 更新参考副本失败：{e.Message}");
+            Debug.LogWarning($"[EnemySetup] Failed to update reference copy: {e.Message}");
         }
     }
 }

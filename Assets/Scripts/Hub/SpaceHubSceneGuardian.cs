@@ -5,20 +5,24 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 
 /// <summary>
-/// 守护 <c>Assets/Scenes/Space/Hub.unity</c>。每次 Editor 启动或脚本重载后检查场景文件，
-/// 如果它被外部工具（云同步、文件历史、还原工具等）退回到不含月面内容的旧版本，
-/// 自动从 <c>Tools/Hub.unity.merged</c> 这个稳定副本恢复，并在 Console 给出警告。
+/// Guards <c>Assets/Scenes/Space/Hub.unity</c>. Runs on every Editor startup or script
+/// reload and checks whether the scene file has been silently reverted to an older
+/// version by an external tool (cloud sync, file history, undo utility, etc.).
+/// If the file is too small or missing the expected moon-terrain marker, it is
+/// automatically restored from the stable reference copy at <c>Tools/Hub.unity.merged</c>
+/// and reloaded in the Editor.
 ///
-/// 注意：如果你确实想手工编辑 Hub 场景，在保存之后请同步把新的内容拷贝覆盖
-/// <c>Tools/Hub.unity.merged</c>，否则下次编辑器启动可能又会被这个守护恢复回旧版。
+/// Note: if you intentionally edit the Hub scene manually, copy the saved result over
+/// <c>Tools/Hub.unity.merged</c> afterwards; otherwise the next Editor startup will
+/// restore the older version from that reference.
 /// </summary>
 [InitializeOnLoad]
 static class SpaceHubSceneGuardian
 {
-    const string ScenePath = "Assets/Scenes/Space/Hub.unity";
+    const string ScenePath     = "Assets/Scenes/Space/Hub.unity";
     const string ReferencePath = "Tools/Hub.unity.merged";
     const string ExpectedMarker = "m_Name: Moon_Closed_A";
-    const double MinSizeRatio = 0.5;
+    const double MinSizeRatio   = 0.5;
 
     static SpaceHubSceneGuardian()
     {
@@ -35,34 +39,34 @@ static class SpaceHubSceneGuardian
         var projectRoot = Directory.GetParent(Application.dataPath)?.FullName;
         if (string.IsNullOrEmpty(projectRoot)) return;
 
-        var sceneFile = Path.GetFullPath(Path.Combine(projectRoot, ScenePath));
+        var sceneFile     = Path.GetFullPath(Path.Combine(projectRoot, ScenePath));
         var referenceFile = Path.GetFullPath(Path.Combine(projectRoot, ReferencePath));
 
         if (!File.Exists(referenceFile))
         {
             Debug.LogWarning(
-                $"[SpaceHubSceneGuardian] 找不到稳定副本 {ReferencePath}，无法自动恢复。" +
-                "请确保该文件存在（可重新执行 Tools/merge_space_hub.ps1 并将结果复制为 Hub.unity.merged）。");
+                $"[SpaceHubSceneGuardian] Reference copy not found at {ReferencePath} — cannot auto-restore. " +
+                "Re-run Tools/merge_space_hub.ps1 and copy the result to Hub.unity.merged.");
             return;
         }
 
         if (!File.Exists(sceneFile))
         {
-            RestoreFromReference(referenceFile, sceneFile, "场景文件不存在");
+            RestoreFromReference(referenceFile, sceneFile, "scene file missing");
             return;
         }
 
         var referenceLength = new FileInfo(referenceFile).Length;
-        var sceneLength = new FileInfo(sceneFile).Length;
-        var tooSmall = referenceLength > 0 && sceneLength < referenceLength * MinSizeRatio;
-        var hasMoon = ContainsLine(sceneFile, ExpectedMarker);
+        var sceneLength     = new FileInfo(sceneFile).Length;
+        var tooSmall        = referenceLength > 0 && sceneLength < referenceLength * MinSizeRatio;
+        var hasMoon         = ContainsLine(sceneFile, ExpectedMarker);
 
         if (!tooSmall && hasMoon) return;
 
         RestoreFromReference(
             referenceFile,
             sceneFile,
-            tooSmall ? $"场景大小 {sceneLength} 远小于参考 {referenceLength}" : "缺少月面地形标记");
+            tooSmall ? $"scene size {sceneLength} is much smaller than reference {referenceLength}" : "moon terrain marker missing");
     }
 
     static bool ContainsLine(string path, string needle)
@@ -79,7 +83,6 @@ static class SpaceHubSceneGuardian
         {
             return false;
         }
-
         return false;
     }
 
@@ -93,12 +96,12 @@ static class SpaceHubSceneGuardian
             AssetDatabase.ImportAsset(ScenePath, ImportAssetOptions.ForceUpdate);
             ReopenSceneIfActive();
             Debug.LogWarning(
-                $"[SpaceHubSceneGuardian] {ScenePath} 检测异常（{reason}），" +
-                $"已自动从 {ReferencePath} 恢复。");
+                $"[SpaceHubSceneGuardian] {ScenePath} was corrupted ({reason}) " +
+                $"and has been restored from {ReferencePath}.");
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"[SpaceHubSceneGuardian] 自动恢复失败：{e.Message}");
+            Debug.LogError($"[SpaceHubSceneGuardian] Auto-restore failed: {e.Message}");
         }
     }
 
@@ -108,7 +111,6 @@ static class SpaceHubSceneGuardian
         {
             var scene = EditorSceneManager.GetSceneAt(i);
             if (scene.path != ScenePath) continue;
-
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             return;
         }

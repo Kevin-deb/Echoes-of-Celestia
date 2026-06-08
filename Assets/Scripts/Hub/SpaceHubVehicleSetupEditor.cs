@@ -6,35 +6,35 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// 每次打开 Assets/Scenes/Space/Hub.unity 时自动检测漫游车和着陆舱是否已挂
-/// <see cref="SpaceVehicleSeat"/> 组件；若未安装则自动添加、保存场景并更新
-/// Tools/Hub.unity.merged 参考副本。
-/// 也可以通过菜单 <b>Echoes / Hub / 重新安装载具交互组件</b> 手动触发。
+/// Checks on every Hub scene open whether the rover and drop-ship have a
+/// <see cref="SpaceVehicleSeat"/> component attached. If not, it adds the component,
+/// saves the scene, and updates <c>Tools/Hub.unity.merged</c>.
+/// Can also be triggered manually via <b>Echoes / Hub / Reinstall Vehicle Components</b>.
 /// </summary>
 [InitializeOnLoad]
 static class SpaceHubVehicleSetupEditor
 {
-    const string HubScenePath  = "Assets/Scenes/Space/Hub.unity";
-    const string MergedCopy    = "Tools/Hub.unity.merged";
-    const string MenuPath      = "Echoes/Hub/重新安装载具交互组件";
-    const string SetupMarker   = "SpaceVehicleSetup_Done_v1";
+    const string HubScenePath = "Assets/Scenes/Space/Hub.unity";
+    const string MergedCopy   = "Tools/Hub.unity.merged";
+    const string MenuPath     = "Echoes/Hub/Reinstall Vehicle Components";
+    const string SetupMarker  = "SpaceVehicleSetup_Done_v1";
 
-    // 场景里的载具根对象名 → 配置
+    // Vehicle root object names → configuration
     static readonly VehicleConfig[] Vehicles =
     {
         new VehicleConfig
         {
             ObjectName    = "P_Rover_Mark_01",
-            DisplayName   = "月球漫游车",
+            DisplayName   = "Lunar Rover",
             Mode          = SpaceVehicleSeat.Mode.Ground,
-            InvertForward = true,                 // 漫游车模型车头朝 -Z，需要翻转
+            InvertForward = true,  // The rover model faces -Z, so forward must be flipped.
             TriggerSize   = new Vector3(6f, 3f, 7f),
             TriggerCenter = new Vector3(0f, 1.5f, 0f),
         },
         new VehicleConfig
         {
             ObjectName    = "P_Drop_Ship_Mark_01",
-            DisplayName   = "着陆舱",
+            DisplayName   = "Landing Craft",
             Mode          = SpaceVehicleSeat.Mode.Aircraft,
             InvertForward = false,
             TriggerSize   = new Vector3(7f, 4f, 8f),
@@ -73,7 +73,7 @@ static class SpaceHubVehicleSetupEditor
         EditorApplication.delayCall -= RunSetup;
         if (EditorApplication.isPlayingOrWillChangePlaymode) return;
 
-        // Hub 场景必须已经打开
+        // Hub scene must already be open in the Editor.
         Scene hubScene = default;
         for (int i = 0; i < EditorSceneManager.sceneCount; i++)
         {
@@ -89,27 +89,27 @@ static class SpaceHubVehicleSetupEditor
             var go = FindInScene(hubScene, cfg.ObjectName);
             if (go == null)
             {
-                Debug.LogWarning($"[VehicleSetup] 未找到 '{cfg.ObjectName}'，跳过。");
+                Debug.LogWarning($"[VehicleSetup] Object '{cfg.ObjectName}' not found — skipping.");
                 continue;
             }
 
             var seat = go.GetComponent<SpaceVehicleSeat>();
             if (seat == null)
             {
-                seat = go.AddComponent<SpaceVehicleSeat>();
+                seat    = go.AddComponent<SpaceVehicleSeat>();
                 changed = true;
             }
 
-            // 每次都覆写配置，确保值最新
+            // Always overwrite config values to ensure they stay up to date.
             seat.vehicleMode   = cfg.Mode;
             seat.displayName   = cfg.DisplayName;
             seat.invertForward = cfg.InvertForward;
 
-            // 确保有 BoxCollider trigger
+            // Ensure a BoxCollider trigger exists for proximity detection.
             var col = go.GetComponent<BoxCollider>();
             if (col == null)
             {
-                col = go.AddComponent<BoxCollider>();
+                col     = go.AddComponent<BoxCollider>();
                 changed = true;
             }
             col.isTrigger = true;
@@ -123,8 +123,7 @@ static class SpaceHubVehicleSetupEditor
 
         EditorSceneManager.SaveScene(hubScene);
         UpdateMergedCopy();
-
-        Debug.Log("[VehicleSetup] 载具交互组件安装完成，场景已保存，参考副本已更新。");
+        Debug.Log("[VehicleSetup] Vehicle components installed, scene saved, reference copy updated.");
     }
 
     static GameObject FindInScene(Scene scene, string name)
@@ -167,7 +166,7 @@ static class SpaceHubVehicleSetupEditor
         }
         catch (System.Exception e)
         {
-            Debug.LogWarning($"[VehicleSetup] 更新参考副本失败：{e.Message}");
+            Debug.LogWarning($"[VehicleSetup] Failed to update reference copy: {e.Message}");
         }
     }
 }

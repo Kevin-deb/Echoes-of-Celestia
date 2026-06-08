@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,6 +8,15 @@ using UnityEngine.UI;
 /// </summary>
 public sealed class LoreInteractable : MonoBehaviour
 {
+    // Registry of all active lore interactables, used by the main-story path guide
+    // to locate the object bound to a given chapter by title.
+    public static readonly List<LoreInteractable> All = new List<LoreInteractable>();
+
+    public string EntryTitle    => entryTitle;
+    public string CategoryLabel => categoryLabel;
+    public bool   IsMainStory   =>
+        !string.IsNullOrEmpty(categoryLabel) && categoryLabel.Contains("Main Chronicle");
+
     [Header("Interaction")]
     [Tooltip("从对象 pivot 到玩家的最大交互距离（米）")]
     [SerializeField] float interactRange = 7f;
@@ -37,6 +47,11 @@ public sealed class LoreInteractable : MonoBehaviour
         EnsurePromptUI();
     }
 
+    void OnEnable()
+    {
+        if (!All.Contains(this)) All.Add(this);
+    }
+
     void Start()
     {
         var playerGo = GameObject.FindGameObjectWithTag("Player");
@@ -63,7 +78,10 @@ public sealed class LoreInteractable : MonoBehaviour
         {
             ShowPrompt($"{interactPrompt}  [ F ]");
             if (Input.GetKeyDown(KeyCode.F))
+            {
                 LoreReadingUI.Instance?.Open(categoryLabel, entryTitle, pages);
+                if (IsMainStory) MainStoryProgress.MarkReadByTitle(entryTitle);
+            }
         }
         else
         {
@@ -74,6 +92,7 @@ public sealed class LoreInteractable : MonoBehaviour
     void OnDisable()
     {
         HideMyPrompt();
+        All.Remove(this);
     }
 
     // ── 提示 UI ───────────────────────────────────────────────────────────────

@@ -2,40 +2,41 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Hub 场景主敌人：生命值 + 自动瞄准 + 红色即时射线激光（方案 A）。
-/// 设计用于 P_Oblivion_Drone_01；Awake 时自动查找炮塔子节点并禁用素材包自带的 TurretLookAt。
+/// Hub scene primary enemy: health, auto-aim turret, and instant-raycast red laser (approach A).
+/// Designed for P_Oblivion_Drone_01. On Awake the script locates the turret child nodes
+/// automatically and disables the legacy TurretLookAt from the asset pack.
 /// </summary>
 public sealed class PrimaryEnemy : MonoBehaviour
 {
-    [Header("生命值")]
+    [Header("Health")]
     [SerializeField] int maxHealth = 80;
 
-    [Header("攻击")]
-    [SerializeField] float detectRange = 70f;
-    [SerializeField] float attackRange = 55f;
-    [SerializeField] float attackCooldown = 1.4f;
-    [SerializeField] int damagePerShot = 12;
+    [Header("Attack")]
+    [SerializeField] float detectRange         = 70f;
+    [SerializeField] float attackRange         = 55f;
+    [SerializeField] float attackCooldown      = 1.4f;
+    [SerializeField] int   damagePerShot       = 12;
     [SerializeField] float aimToleranceDegrees = 7f;
 
-    [Header("炮塔旋转")]
+    [Header("Turret Rotation")]
     [SerializeField] float turretTurnSpeed = 90f;
-    [SerializeField] float gunTurnSpeed = 90f;
+    [SerializeField] float gunTurnSpeed    = 90f;
 
-    [Header("激光视觉")]
+    [Header("Laser Visual")]
     [SerializeField] float laserVisibleDuration = 0.12f;
-    [SerializeField] float laserWidth = 0.18f;
-    [SerializeField] Color laserColor = new Color(1f, 0.15f, 0.1f, 1f);
+    [SerializeField] float laserWidth           = 0.18f;
+    [SerializeField] Color laserColor           = new Color(1f, 0.15f, 0.1f, 1f);
 
-    [Header("引用（留空则自动查找）")]
+    [Header("References (leave empty for auto-find)")]
     [SerializeField] Transform turretBase;
     [SerializeField] Transform gun;
     [SerializeField] Transform muzzle;
 
-    int _health;
-    float _nextShotTime;
+    int          _health;
+    float        _nextShotTime;
     LineRenderer _laserLine;
-    AudioSource _shootAudio;
-    Coroutine _laserRoutine;
+    AudioSource  _shootAudio;
+    Coroutine    _laserRoutine;
 
     public bool IsAlive => _health > 0;
 
@@ -56,7 +57,7 @@ public sealed class PrimaryEnemy : MonoBehaviour
         if (target == null) return;
 
         var aimPoint = GetAimPoint(target);
-        var dist = Vector3.Distance(transform.position, aimPoint);
+        var dist     = Vector3.Distance(transform.position, aimPoint);
         if (dist > detectRange) return;
 
         AimTurret(aimPoint);
@@ -75,10 +76,11 @@ public sealed class PrimaryEnemy : MonoBehaviour
         OnDeath();
     }
 
-    // ── 目标 ──────────────────────────────────────────────────────────────────
+    // ── Target resolution ─────────────────────────────────────────────────────
 
     static Transform ResolveAttackTarget()
     {
+        // Prioritise the vehicle when the player is driving one.
         var vehicle = SpaceVehicleSeat.ActiveOccupiedTransform;
         if (vehicle != null) return vehicle;
 
@@ -99,7 +101,7 @@ public sealed class PrimaryEnemy : MonoBehaviour
         return target.position + Vector3.up;
     }
 
-    // ── 瞄准 ──────────────────────────────────────────────────────────────────
+    // ── Aiming ────────────────────────────────────────────────────────────────
 
     void AimTurret(Vector3 aimPoint)
     {
@@ -117,7 +119,7 @@ public sealed class PrimaryEnemy : MonoBehaviour
 
         if (gun == null) return;
 
-        var origin = muzzle != null ? muzzle.position : gun.position;
+        var origin   = muzzle != null ? muzzle.position : gun.position;
         var toTarget = aimPoint - origin;
         if (toTarget.sqrMagnitude < 0.0001f) return;
 
@@ -127,13 +129,13 @@ public sealed class PrimaryEnemy : MonoBehaviour
 
     bool IsAimedAt(Vector3 aimPoint)
     {
-        var origin = muzzle != null ? muzzle.position : (gun != null ? gun.position : transform.position);
+        var origin  = muzzle != null ? muzzle.position : (gun != null ? gun.position : transform.position);
         var desired = (aimPoint - origin).normalized;
-        var forward = muzzle != null ? muzzle.forward : (gun != null ? gun.forward : transform.forward);
+        var forward = muzzle != null ? muzzle.forward  : (gun != null ? gun.forward  : transform.forward);
         return Vector3.Angle(forward, desired) <= aimToleranceDegrees;
     }
 
-    // ── 射击 ──────────────────────────────────────────────────────────────────
+    // ── Shooting ──────────────────────────────────────────────────────────────
 
     void TryShoot(Transform target, Vector3 aimPoint)
     {
@@ -143,13 +145,13 @@ public sealed class PrimaryEnemy : MonoBehaviour
         _nextShotTime = Time.time + attackCooldown;
 
         var origin = muzzle != null ? muzzle.position : gun.position;
-        var dir = (aimPoint - origin).normalized;
-        var end = origin + dir * attackRange;
+        var dir    = (aimPoint - origin).normalized;
+        var end    = origin + dir * attackRange;
 
         if (Physics.Raycast(origin, dir, out var hit, attackRange, ~0, QueryTriggerInteraction.Ignore))
             end = hit.point;
 
-        // 玩家在载具内时，装甲阻挡激光，不造成任何伤害（仍显示激光视觉效果）。
+        // Vehicle armour blocks damage while the player is inside; the laser visual still plays.
         if (!SpaceVehicleSeat.IsOccupied)
         {
             var combat = target.GetComponent<HubCombatTarget>();
@@ -165,28 +167,28 @@ public sealed class PrimaryEnemy : MonoBehaviour
         _laserRoutine = StartCoroutine(FlashLaser(origin, end));
     }
 
-    // ── 激光 LineRenderer ─────────────────────────────────────────────────────
+    // ── Laser LineRenderer ────────────────────────────────────────────────────
 
     void EnsureLaserLine()
     {
         var lineGo = new GameObject("EnemyLaserLine");
         lineGo.transform.SetParent(transform, false);
 
-        _laserLine = lineGo.AddComponent<LineRenderer>();
-        _laserLine.useWorldSpace = true;
-        _laserLine.positionCount = 2;
-        _laserLine.startWidth = laserWidth;
-        _laserLine.endWidth = laserWidth * 0.35f;
-        _laserLine.numCapVertices = 4;
-        _laserLine.enabled = false;
+        _laserLine                 = lineGo.AddComponent<LineRenderer>();
+        _laserLine.useWorldSpace   = true;
+        _laserLine.positionCount   = 2;
+        _laserLine.startWidth      = laserWidth;
+        _laserLine.endWidth        = laserWidth * 0.35f;
+        _laserLine.numCapVertices  = 4;
+        _laserLine.enabled         = false;
 
         var shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color");
         if (shader != null)
         {
             var mat = new Material(shader) { color = laserColor };
-            _laserLine.material = mat;
-            _laserLine.startColor = laserColor;
-            _laserLine.endColor = laserColor;
+            _laserLine.material    = mat;
+            _laserLine.startColor  = laserColor;
+            _laserLine.endColor    = laserColor;
         }
     }
 
@@ -197,10 +199,10 @@ public sealed class PrimaryEnemy : MonoBehaviour
         _laserLine.enabled = true;
         yield return new WaitForSeconds(laserVisibleDuration);
         _laserLine.enabled = false;
-        _laserRoutine = null;
+        _laserRoutine      = null;
     }
 
-    // ── 死亡 / 初始化 ───────────────────────────────────────────────────────
+    // ── Death / Initialisation ────────────────────────────────────────────────
 
     void OnDeath()
     {
@@ -218,12 +220,9 @@ public sealed class PrimaryEnemy : MonoBehaviour
 
     void AutoFindTurretParts()
     {
-        if (turretBase == null)
-            turretBase = FindDeepChild(transform, "P_Turret_Simple_01");
-        if (gun == null)
-            gun = FindDeepChild(transform, "Turret_Gun_01");
-        if (muzzle == null)
-            muzzle = FindDeepChild(transform, "Laser_Launch");
+        if (turretBase == null) turretBase = FindDeepChild(transform, "P_Turret_Simple_01");
+        if (gun        == null) gun        = FindDeepChild(transform, "Turret_Gun_01");
+        if (muzzle     == null) muzzle     = FindDeepChild(transform, "Laser_Launch");
     }
 
     void DisableLegacyTurretScript()

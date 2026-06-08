@@ -7,8 +7,9 @@ using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Hub 场景的 Klee 模型运行时适配。
-/// 优先用 Hi3D 导出的 GLB 数据生成显示网格，保证 Mesh UV 与贴图来自同一个文件。
+/// Runtime fit for the Klee character model in the Hub scene.
+/// Prefers GLB data exported via Hi3D to build the display mesh so that
+/// Mesh UVs and textures originate from the same file.
 /// </summary>
 public sealed class HubKleeModelRuntimeFit : MonoBehaviour
 {

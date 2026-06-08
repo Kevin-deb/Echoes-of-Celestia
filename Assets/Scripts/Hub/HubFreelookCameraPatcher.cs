@@ -2,8 +2,9 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// 当 Hub 场景加载时，禁掉 Creepy Cat 示例场景自带的相机脚本（MouseLook 等），
-/// 让 HubSimpleThirdPerson 接管相机控制。不改动素材包本身。
+/// When the Hub scene loads, disables the example camera scripts bundled with the
+/// Creepy Cat asset pack (MouseLook, etc.) so that HubSimpleThirdPerson takes over
+/// camera control. The asset pack itself is not modified.
 /// </summary>
 public sealed class HubFreelookCameraPatcher : MonoBehaviour
 {
@@ -40,9 +41,10 @@ public sealed class HubFreelookCameraPatcher : MonoBehaviour
         var rig = GameObject.Find(FreelookCameraName);
         if (rig == null) return;
 
-        // GetComponentsInChildren<MonoBehaviour> 只会返回 MonoBehaviour 子类，
-        // Camera / AudioListener / Light 等内置 Behaviour 不在其中，所以这里只关闭
-        // 示例场景挂的自定义脚本（MouseLook、Launcher 等），不会影响相机本身。
+        // GetComponentsInChildren<MonoBehaviour> only returns MonoBehaviour subclasses.
+        // Built-in Behaviours such as Camera, AudioListener, and Light are excluded,
+        // so only the custom scripts added by the example scene (MouseLook, Launcher, etc.)
+        // are disabled — the camera component itself is unaffected.
         foreach (var behaviour in rig.GetComponentsInChildren<MonoBehaviour>(true))
         {
             if (behaviour == null) continue;

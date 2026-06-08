@@ -5,28 +5,32 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
-/// 挂在 Player 或可驾驶载具上，接收敌人攻击伤害。
-/// Player 死亡后显示 10 秒英文倒计时，倒计时结束后在出生点重生。
+/// Attach to the Player or any driveable vehicle to receive damage from enemies.
+/// Also provides a runtime fallback: if the Editor setup script has not run, this
+/// component is added to the Player automatically at scene load.
+/// On death the Player model turns greyscale and a 10-second English countdown begins,
+/// after which the Player respawns at their starting position.
 /// </summary>
 public sealed class HubCombatTarget : MonoBehaviour
 {
-    [SerializeField] int  maxHealth     = 100;
-    [SerializeField] bool destroyOnDeath;
+    [SerializeField] int   maxHealth    = 100;
+    [SerializeField] bool  destroyOnDeath;
     [SerializeField] float respawnDelay = 10f;
 
     int  _health;
     bool _dead;
 
-    // 记录进入游戏时的出生点位置与朝向
+    // Spawn point recorded in Start(); used to teleport the player back on respawn.
     Vector3    _spawnPosition;
     Quaternion _spawnRotation;
 
-    // 用于恢复模型颜色（key = Renderer, value = 各材质实例的原始颜色列表）
+    // Snapshot of each renderer's original material colours.
+    // Restored on respawn so the model returns to its normal appearance.
     System.Collections.Generic.Dictionary<Renderer, Color[]> _originalColors;
 
-    // 倒计时 UI
-    static GameObject  s_countdownRoot;
-    static Text        s_countdownText;
+    // Countdown UI (shared static instance)
+    static GameObject s_countdownRoot;
+    static Text       s_countdownText;
 
     public int  MaxHealth     => maxHealth;
     public int  CurrentHealth => _health;
@@ -34,8 +38,12 @@ public sealed class HubCombatTarget : MonoBehaviour
 
     public event Action<HubCombatTarget> Died;
 
-    // ── 运行时保底安装 ───────────────────────────────────────────────────────
+    // ── Runtime fallback install ──────────────────────────────────────────────
 
+    /// <summary>
+    /// Ensures HubCombatTarget is present on the Player at runtime even if the
+    /// Editor setup script did not run (e.g. after a scene restore by the guardian).
+    /// </summary>
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void AutoInstallOnPlayer()
     {
@@ -54,10 +62,10 @@ public sealed class HubCombatTarget : MonoBehaviour
         if (player.GetComponent<HubCombatTarget>() != null) return;
 
         player.AddComponent<HubCombatTarget>();
-        Debug.Log("[HubCombatTarget] Player 上组件缺失，运行时已自动添加（maxHealth=100）。");
+        Debug.Log("[HubCombatTarget] Component was missing from Player — added automatically at runtime (maxHealth=100).");
     }
 
-    // ── Unity 生命周期 ────────────────────────────────────────────────────────
+    // ── Unity lifecycle ───────────────────────────────────────────────────────
 
     void Awake()
     {
@@ -66,19 +74,19 @@ public sealed class HubCombatTarget : MonoBehaviour
 
     void Start()
     {
-        // 记录出生点，并快照当前模型的原始材质颜色，以便重生时恢复。
+        // Record the spawn point and snapshot material colours before any damage is taken.
         _spawnPosition = transform.position;
         _spawnRotation = transform.rotation;
         SnapshotOriginalColors();
     }
 
-    // ── 受击 ──────────────────────────────────────────────────────────────────
+    // ── Damage ────────────────────────────────────────────────────────────────
 
     public void TakeDamage(int amount)
     {
         if (!IsAlive || amount <= 0) return;
 
-        // 玩家在载具内时，装甲完全阻挡激光，不承受任何伤害。
+        // Vehicle armour fully blocks laser damage while the player is driving.
         if (CompareTag("Player") && SpaceVehicleSeat.IsOccupied) return;
 
         _health = Mathf.Max(0, _health - amount);
@@ -92,7 +100,7 @@ public sealed class HubCombatTarget : MonoBehaviour
             Destroy(gameObject);
     }
 
-    // ── 死亡 / 重生 ───────────────────────────────────────────────────────────
+    // ── Death / Respawn ───────────────────────────────────────────────────────
 
     void OnDefeated()
     {
@@ -103,7 +111,6 @@ public sealed class HubCombatTarget : MonoBehaviour
             controller.enabled = false;
 
         ApplyGrayscaleToModel();
-
         StartCoroutine(RespawnCountdown());
     }
 
@@ -127,7 +134,8 @@ public sealed class HubCombatTarget : MonoBehaviour
 
     void Respawn()
     {
-        // 先把 CharacterController 临时禁用，再传送，避免 CC 把位移重置。
+        // Disable the CharacterController before teleporting so it does not
+        // override the new position during the same physics step.
         var cc = GetComponent<CharacterController>();
         if (cc != null) cc.enabled = false;
 
@@ -145,22 +153,21 @@ public sealed class HubCombatTarget : MonoBehaviour
         if (controller != null)
         {
             controller.enabled = true;
-            // 重置相机到出生朝向，避免死亡期间残留的相机角度
+            // Reset the camera to the spawn-point facing direction.
             controller.SendMessage("SnapCameraToCharacterFacing", SendMessageOptions.DontRequireReceiver);
         }
     }
 
-    // ── 颜色快照 / 恢复 ───────────────────────────────────────────────────────
+    // ── Colour snapshot / restore ─────────────────────────────────────────────
 
     void SnapshotOriginalColors()
     {
-        _originalColors =
-            new System.Collections.Generic.Dictionary<Renderer, Color[]>();
+        _originalColors = new System.Collections.Generic.Dictionary<Renderer, Color[]>();
 
         foreach (var r in GetComponentsInChildren<Renderer>(true))
         {
             if (r == null) continue;
-            var mats = r.materials;
+            var mats   = r.materials;
             var colors = new Color[mats.Length];
             for (int i = 0; i < mats.Length; i++)
                 colors[i] = mats[i] != null && mats[i].HasProperty("_Color")
@@ -205,7 +212,7 @@ public sealed class HubCombatTarget : MonoBehaviour
         }
     }
 
-    // ── 倒计时 UI ─────────────────────────────────────────────────────────────
+    // ── Countdown UI ──────────────────────────────────────────────────────────
 
     static void EnsureCountdownUI()
     {
@@ -223,14 +230,14 @@ public sealed class HubCombatTarget : MonoBehaviour
             typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
 
         var canvas = canvasGo.GetComponent<Canvas>();
-        canvas.renderMode  = RenderMode.ScreenSpaceOverlay;
+        canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 60;
 
         var scaler = canvasGo.GetComponent<CanvasScaler>();
         scaler.uiScaleMode        = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
 
-        // 半透明黑色全屏遮罩
+        // Semi-transparent full-screen black background
         var bg = new GameObject("Background",
             typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         bg.transform.SetParent(canvasGo.transform, false);
@@ -240,7 +247,7 @@ public sealed class HubCombatTarget : MonoBehaviour
         bgRt.offsetMin = bgRt.offsetMax = Vector2.zero;
         bg.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.55f);
 
-        // 倒计时文字（居中）
+        // Centred countdown text
         var textGo = new GameObject("CountdownText",
             typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
         textGo.transform.SetParent(canvasGo.transform, false);
@@ -272,7 +279,7 @@ public sealed class HubCombatTarget : MonoBehaviour
         if (s_countdownRoot != null) s_countdownRoot.SetActive(false);
     }
 
-    // ── 外部接口 ──────────────────────────────────────────────────────────────
+    // ── Public API ────────────────────────────────────────────────────────────
 
     public void ResetHealth()
     {

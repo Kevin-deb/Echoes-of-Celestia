@@ -3,84 +3,91 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 挂在任意载具根 GameObject 上即可启用 F 进入 / V 离开交互。
-/// 距离判定基于载具渲染器的世界 Bounds，所以无论载具 pivot 在哪都能稳定触发。
+/// Attach to any vehicle root GameObject to enable F-to-enter / V-to-exit interaction.
+/// Proximity is detected using the vehicle's renderer world bounds, so it works correctly
+/// regardless of where the pivot is placed.
 /// </summary>
 public sealed class SpaceVehicleSeat : MonoBehaviour
 {
     public enum Mode { Ground, Aircraft }
 
-    [Header("基本设置")]
-    [Tooltip("漫游车 = Ground，飞船/飞机 = Aircraft")]
+    [Header("Basic Settings")]
+    [Tooltip("Ground = land rover, Aircraft = spaceship / plane")]
     public Mode vehicleMode = Mode.Ground;
-    [Tooltip("在 UI 上显示的名称")]
-    public string displayName = "载具";
-    [Tooltip("玩家到载具外壳的最大距离（米）")]
+    [Tooltip("Name shown in the on-screen prompt")]
+    public string displayName = "Vehicle";
+    [Tooltip("Maximum distance from the player to the nearest point on the vehicle's bounds (metres)")]
     [SerializeField] float enterDistance = 3.5f;
-    [Tooltip("若模型的可见车头与 transform.forward 相反（按 W 反而后退），勾上以翻转前后方向。")]
+    [Tooltip("Tick if the visible front of the model is opposite to transform.forward (W drives backwards)")]
     public bool invertForward = false;
-    [Tooltip("勾选后会在 Console 输出调试信息，定位问题时打开")]
+    [Tooltip("Print debug information to the Console while playing")]
     [SerializeField] bool debugLog = true;
 
-    // 真正"车头"方向：根据 invertForward 翻转一次，驾驶 / 相机均使用此向量。
+    // The true forward direction of the vehicle, flipped once when invertForward is set.
+    // Used by all driving and camera logic so they stay consistent.
     Vector3 ForwardDir => invertForward ? -transform.forward : transform.forward;
 
-    [Header("地面载具")]
+    [Header("Ground Vehicle")]
     [SerializeField] float groundMoveSpeed = 13f;
     [SerializeField] float groundTurnSpeed = 90f;
 
-    [Header("飞行载具")]
+    [Header("Aircraft")]
     [SerializeField] float aircraftForwardSpeed = 18f;
     [SerializeField] float aircraftStrafeSpeed = 14f;
     [SerializeField] float aircraftLiftSpeed = 10f;
     [SerializeField] float aircraftFallSpeed = 5.5f;
     [SerializeField] float aircraftTurnSpeed = 80f;
-    [Tooltip("距地面的最小悬停高度（米）")]
+    [Tooltip("Minimum hover height above the terrain surface (metres)")]
     [SerializeField] float minHoverHeight = 2.5f;
 
-    [Header("相机（值会与载具尺寸取较大者，保证看到整车）")]
-    [Tooltip("相机距载具中心的最低高度，最终高度 = max(此值, 载具最大边长 × heightSizeMultiplier)")]
+    [Header("Camera (auto-scales with vehicle size)")]
+    [Tooltip("Minimum camera height above the vehicle centre. Final height = max(this, max side length * heightSizeMultiplier)")]
     [SerializeField] float camHeightOffset = 2.5f;
-    [Tooltip("相机距载具中心的最低水平距离")]
+    [Tooltip("Minimum camera distance behind the vehicle centre")]
     [SerializeField] float camDistanceBehind = 6f;
-    [Tooltip("相机高度自适应系数（× 载具最大边长）")]
+    [Tooltip("Height auto-scale multiplier (x max side length of the vehicle bounds)")]
     [SerializeField] float heightSizeMultiplier = 0.55f;
-    [Tooltip("相机距离自适应系数（× 载具最大边长）")]
+    [Tooltip("Distance auto-scale multiplier (x max side length of the vehicle bounds)")]
     [SerializeField] float distanceSizeMultiplier = 1.25f;
     [SerializeField] float camFollowSpeed = 10f;
 
-    // ── 运行时状态 ────────────────────────────────────────────────────────────
+    // ── Runtime state ─────────────────────────────────────────────────────────
     static SpaceVehicleSeat s_activeVehicle;
 
-    /// <summary>玩家当前正在驾驶的载具 Transform；未驾驶时为 null。</summary>
+    /// <summary>Transform of the vehicle the player is currently driving; null when on foot.</summary>
     public static Transform ActiveOccupiedTransform =>
         s_activeVehicle != null ? s_activeVehicle.transform : null;
 
     public static bool IsOccupied => s_activeVehicle != null;
-    static GameObject       s_promptRoot;
-    static Text             s_promptText;
 
-    GameObject               _player;
-    HubSimpleThirdPerson     _playerController;
-    CharacterController      _characterController;
-    // Key = Renderer, Value = 进入载具前的 enabled 状态。退出时按这份快照恢复，
-    // 避免把本来就该被禁用的渲染器（如运行时被替换掉的占位 FBX）也点亮，
-    // 导致退出后出现两个角色模型。
+    static GameObject s_promptRoot;
+    static Text       s_promptText;
+
+    GameObject           _player;
+    HubSimpleThirdPerson _playerController;
+    CharacterController  _characterController;
+
+    // Snapshot of each renderer's enabled state taken on entry.
+    // Restored on exit to avoid re-enabling renderers that were disabled by HubKleeModelRuntimeFit
+    // (which would cause a duplicate character model to appear after exiting the vehicle).
     Dictionary<Renderer, bool> _playerRendererState;
 
     Renderer[] _ownRenderers;
     Bounds     _ownBounds;
     bool       _hasBounds;
-    // 载具 pivot 距底部包围盒的 Y 偏移，用于让轮胎贴地而非陷地。Awake/Start 后只算一次。
-    float      _bottomOffset;
 
-    bool       _occupied;
-    float      _verticalVelocity;
-    // 飞行载具空载下落状态
-    bool       _isLanding;
-    float      _landingVelocity;
+    // Vertical offset from the vehicle pivot to the bottom of its bounds.
+    // Used to snap the vehicle so its base (tyres / hull) sits on the terrain surface.
+    float _bottomOffset;
 
-    // ── Unity 生命周期 ────────────────────────────────────────────────────────
+    bool  _occupied;
+    float _verticalVelocity;
+
+    // Free-fall landing state for an unoccupied aircraft
+    bool  _isLanding;
+    float _landingVelocity;
+
+    // ── Unity lifecycle ───────────────────────────────────────────────────────
 
     void Awake()
     {
@@ -92,36 +99,34 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
 
         if (debugLog)
         {
-            Debug.Log($"[SpaceVehicleSeat] '{name}' 启动 | mode={vehicleMode} " +
+            Debug.Log($"[SpaceVehicleSeat] '{name}' started | mode={vehicleMode} " +
                       $"| renderers={_ownRenderers.Length} | bounds={_ownBounds} " +
                       $"| bottomOffset={_bottomOffset:F2} " +
-                      $"| player={(_player != null ? _player.name : "<未找到>")}");
+                      $"| player={(_player != null ? _player.name : "<not found>")}");
         }
     }
 
     void Update()
     {
-        // 无人飞行载具的自由落体着陆——独立于玩家交互，每帧都跑一次。
+        // Unoccupied aircraft free-fall — runs every frame independently of player input.
         if (!_occupied && _isLanding && vehicleMode == Mode.Aircraft)
             TickLanding();
 
         if (_player == null) { TryCachePlayer(); return; }
-
         if (_occupied) { HandleOccupied(); return; }
-
         if (s_activeVehicle != null) return;
 
         RecomputeBounds();
-        var playerPos   = GetPlayerCenter();
-        var closest     = _hasBounds ? _ownBounds.ClosestPoint(playerPos) : transform.position;
-        var dist        = Vector3.Distance(playerPos, closest);
+        var playerPos = GetPlayerCenter();
+        var closest   = _hasBounds ? _ownBounds.ClosestPoint(playerPos) : transform.position;
+        var dist      = Vector3.Distance(playerPos, closest);
 
         if (dist <= enterDistance)
         {
-            ShowPrompt($"按 F 进入 {displayName}");
+            ShowPrompt($"Press F to enter {displayName}");
             if (Input.GetKeyDown(KeyCode.F))
             {
-                if (debugLog) Debug.Log($"[SpaceVehicleSeat] F 按下，进入 '{name}' | dist={dist:F2}m");
+                if (debugLog) Debug.Log($"[SpaceVehicleSeat] F pressed, entering '{name}' | dist={dist:F2}m");
                 Enter();
             }
         }
@@ -137,51 +142,50 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
         FollowCamera(snap: false);
     }
 
-    // ── 进入 / 离开 ───────────────────────────────────────────────────────────
+    // ── Enter / Exit ──────────────────────────────────────────────────────────
 
     void Enter()
     {
-        _occupied = true;
-        s_activeVehicle = this;
+        _occupied         = true;
+        s_activeVehicle   = this;
         _verticalVelocity = 0f;
-        // 玩家进入时取消任何残留的着陆下落
-        _isLanding = false;
-        _landingVelocity = 0f;
+        // Cancel any in-progress free-fall landing when the player re-enters.
+        _isLanding        = false;
+        _landingVelocity  = 0f;
 
         if (_player == null) TryCachePlayer();
 
-        if (_playerController != null) _playerController.enabled = false;
+        if (_playerController    != null) _playerController.enabled    = false;
         if (_characterController != null) _characterController.enabled = false;
         HidePlayerSnapshot();
 
         FollowCamera(snap: true);
 
-        var modeHint = vehicleMode == Mode.Aircraft
-            ? "WASD 飞行，按住空格升空，V 离开"
-            : "WASD 驾驶，V 离开";
-        ShowPrompt($"{displayName}：{modeHint}");
+        var hint = vehicleMode == Mode.Aircraft
+            ? "WASD to fly  |  Hold Space to ascend  |  V to exit"
+            : "WASD to drive  |  V to exit";
+        ShowPrompt($"{displayName}:  {hint}");
     }
 
     void Exit()
     {
-        // 1) 从载具右侧 bounds 外 + 安全距离 选一个候选下车点。
+        // 1) Pick an exit position to the right of the vehicle, outside its bounds.
         var sideOffset = (_hasBounds ? _ownBounds.extents.x : 2f) + 1.5f;
-        var probePos = transform.position
-                     - transform.right * sideOffset
-                     + Vector3.up * 5f; // 起测高度，向下射地面
+        var probePos   = transform.position
+                       - transform.right * sideOffset
+                       + Vector3.up * 5f; // raycast origin elevated above ground
 
-        // 2) 用射线打到地面，避免悬空。
+        // 2) Snap to terrain so the player doesn't spawn in mid-air or underground.
         var snapped     = SnapToGround(probePos);
         var groundFound = !Mathf.Approximately(snapped.y, probePos.y);
-        var groundY     = groundFound ? snapped.y : transform.position.y; // 兜底：用载具高度
+        var groundY     = groundFound ? snapped.y : transform.position.y; // fallback: use vehicle Y
 
-        // 3) 把玩家放到 "脚底刚好贴地 + 一点冗余" 的位置，CC 才不会陷进地里。
+        // 3) Compute the position so the player's foot bottom sits just above the terrain.
+        //    CharacterController's pivot is at waist height, so we offset by half height.
         var exitPos = new Vector3(snapped.x, groundY, snapped.z);
         if (_characterController != null)
         {
-            // CharacterController 脚底相对 transform 的偏移
             var footYOffset = _characterController.center.y - _characterController.height * 0.5f;
-            // 让 (transform.y + footYOffset) ≈ groundY + 0.05
             exitPos.y = groundY + 0.05f - footYOffset;
         }
 
@@ -191,39 +195,41 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
             _player.transform.rotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
         }
 
-        // 4) 强制同步 Transform，避免 CharacterController.enable 后用旧位置做物理求解。
+        // 4) Force physics transform sync before re-enabling the CharacterController
+        //    so it uses the new position rather than the old one.
         Physics.SyncTransforms();
 
         if (_characterController != null) _characterController.enabled = true;
-        if (_playerController != null) _playerController.enabled = true;
+        if (_playerController    != null) _playerController.enabled    = true;
         RestorePlayerSnapshot();
 
         _occupied = false;
         if (s_activeVehicle == this) s_activeVehicle = null;
         HidePrompt();
 
-        // 飞行载具如果在空中被离开，开启自由落体着陆
+        // Aircraft exited in mid-air: begin gravity-driven descent.
         if (vehicleMode == Mode.Aircraft)
         {
-            _isLanding = true;
+            _isLanding       = true;
             _landingVelocity = 0f;
         }
 
         if (debugLog)
         {
-            Debug.Log($"[SpaceVehicleSeat] 玩家离开 '{name}' | exitPos={exitPos} " +
+            Debug.Log($"[SpaceVehicleSeat] Player exited '{name}' | exitPos={exitPos} " +
                       $"| groundY={groundY:F2} | groundFound={groundFound}");
         }
     }
 
     /// <summary>
-    /// 无人飞行载具的自由落体：重力加速 + 终端速度上限，落到 bounds 底部贴地后停止。
+    /// Gravity-driven descent for an unoccupied aircraft.
+    /// Accelerates up to a terminal velocity cap, then stops when the vehicle base touches the terrain.
     /// </summary>
     void TickLanding()
     {
-        // 用 aircraftFallSpeed 作为终端下落速度，避免砸得太狠。
+        // aircraftFallSpeed is used as the terminal velocity to prevent a hard crash impact.
         _landingVelocity -= 9.8f * Time.deltaTime;
-        _landingVelocity = Mathf.Max(_landingVelocity, -aircraftFallSpeed);
+        _landingVelocity  = Mathf.Max(_landingVelocity, -aircraftFallSpeed);
 
         var pos = transform.position;
         pos.y += _landingVelocity * Time.deltaTime;
@@ -234,17 +240,17 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
             var restY = groundY + _bottomOffset;
             if (transform.position.y <= restY)
             {
-                pos = transform.position;
+                pos   = transform.position;
                 pos.y = restY;
                 transform.position = pos;
-                _isLanding = false;
+                _isLanding       = false;
                 _landingVelocity = 0f;
-                if (debugLog) Debug.Log($"[SpaceVehicleSeat] '{name}' 着陆完成 | groundY={groundY:F2}");
+                if (debugLog) Debug.Log($"[SpaceVehicleSeat] '{name}' landed | groundY={groundY:F2}");
             }
         }
     }
 
-    // ── 载具控制 ──────────────────────────────────────────────────────────────
+    // ── Vehicle controls ──────────────────────────────────────────────────────
 
     void HandleOccupied()
     {
@@ -270,15 +276,15 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
 
     void FlyAircraft()
     {
-        var fwd  = Input.GetAxisRaw("Vertical");
-        var side = Input.GetAxisRaw("Horizontal");
+        var fwd        = Input.GetAxisRaw("Vertical");
+        var side       = Input.GetAxisRaw("Horizontal");
         var liftTarget = Input.GetKey(KeyCode.Space) ? aircraftLiftSpeed : -aircraftFallSpeed;
 
         _verticalVelocity = Mathf.Lerp(_verticalVelocity, liftTarget, 3f * Time.deltaTime);
 
-        var move = ForwardDir        * (fwd  * aircraftForwardSpeed)
-                 + transform.right   * (side * aircraftStrafeSpeed)
-                 + Vector3.up        * _verticalVelocity;
+        var move = ForwardDir      * (fwd  * aircraftForwardSpeed)
+                 + transform.right * (side * aircraftStrafeSpeed)
+                 + Vector3.up      * _verticalVelocity;
 
         transform.position += move * Time.deltaTime;
 
@@ -287,7 +293,7 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
 
         if (TryGetGroundY(transform.position, out var groundY))
         {
-            // 飞行最低高度 = 地表 + bottomOffset（让底盘对齐地面） + 悬停高度
+            // Minimum flight altitude = terrain + bottomOffset (hull base) + hover buffer
             var minY = groundY + _bottomOffset + minHoverHeight;
             if (transform.position.y < minY)
             {
@@ -297,14 +303,12 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 把载具按 bounds 底部对齐地面，避免轮胎陷进地里。
-    /// </summary>
+    /// <summary>Snap the vehicle so its bounds base aligns with the terrain, preventing the hull from sinking.</summary>
     void SnapVehicleToGround()
     {
         if (!TryGetGroundY(transform.position, out var groundY)) return;
         var pos = transform.position;
-        pos.y = groundY + _bottomOffset;
+        pos.y   = groundY + _bottomOffset;
         transform.position = pos;
     }
 
@@ -312,7 +316,7 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
     {
         groundY = 0f;
         var origin = pos + Vector3.up * 200f;
-        var hits = Physics.RaycastAll(origin, Vector3.down, 400f, ~0, QueryTriggerInteraction.Ignore);
+        var hits   = Physics.RaycastAll(origin, Vector3.down, 400f, ~0, QueryTriggerInteraction.Ignore);
         System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
         foreach (var h in hits)
@@ -325,26 +329,26 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
         return false;
     }
 
-    // ── 相机跟随 ──────────────────────────────────────────────────────────────
+    // ── Camera follow ─────────────────────────────────────────────────────────
 
     void FollowCamera(bool snap)
     {
         var cam = Camera.main;
         if (cam == null) return;
 
-        // 根据载具实际尺寸自适应：保证镜头足够远，能完整看到载具。
+        // Auto-scale camera offset from the vehicle's actual size so the full vehicle is visible.
         RecomputeBounds();
-        var pivot = _hasBounds ? _ownBounds.center : transform.position;
+        var pivot   = _hasBounds ? _ownBounds.center : transform.position;
         var sizeMax = _hasBounds
             ? Mathf.Max(_ownBounds.size.x, _ownBounds.size.y, _ownBounds.size.z)
             : 4f;
 
-        var distance = Mathf.Max(camDistanceBehind, sizeMax * distanceSizeMultiplier);
-        var height   = Mathf.Max(camHeightOffset,   sizeMax * heightSizeMultiplier);
+        var distance  = Mathf.Max(camDistanceBehind, sizeMax * distanceSizeMultiplier);
+        var height    = Mathf.Max(camHeightOffset,   sizeMax * heightSizeMultiplier);
 
-        // 相机要在"车头"反方向（车尾后方），所以用 -ForwardDir
+        // Camera sits behind the front of the vehicle, so we use -ForwardDir.
         var target    = pivot - ForwardDir * distance + Vector3.up * height;
-        var lookAt    = pivot + Vector3.up * (sizeMax * 0.15f); // 略上抬一点，地平线居中
+        var lookAt    = pivot + Vector3.up * (sizeMax * 0.15f); // slightly above centre keeps horizon centred
         var targetRot = Quaternion.LookRotation((lookAt - target).normalized, Vector3.up);
 
         if (snap)
@@ -358,7 +362,7 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
         }
     }
 
-    // ── 辅助方法 ──────────────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     void RecomputeBounds()
     {
@@ -385,7 +389,7 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
     Vector3 SnapToGround(Vector3 pos)
     {
         var origin = pos + Vector3.up * 80f;
-        var hits = Physics.RaycastAll(origin, Vector3.down, 180f, ~0, QueryTriggerInteraction.Ignore);
+        var hits   = Physics.RaycastAll(origin, Vector3.down, 180f, ~0, QueryTriggerInteraction.Ignore);
         System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
         foreach (var h in hits)
@@ -426,7 +430,7 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
         _playerRendererState = null;
     }
 
-    // ── Prompt UI ──────────────────────────────────────────────────────────────
+    // ── Prompt UI ─────────────────────────────────────────────────────────────
 
     static void EnsurePromptUI()
     {
@@ -448,22 +452,22 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
         var canvasGo = new GameObject("VehiclePromptCanvas",
             typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         var canvas = canvasGo.GetComponent<Canvas>();
-        canvas.renderMode  = RenderMode.ScreenSpaceOverlay;
+        canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 50;
 
         var scaler = canvasGo.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.uiScaleMode        = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
 
         var panelGo = new GameObject("VehiclePromptPanel",
             typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         panelGo.transform.SetParent(canvasGo.transform, false);
         var rt = panelGo.GetComponent<RectTransform>();
-        rt.anchorMin = new Vector2(0.5f, 0f);
-        rt.anchorMax = new Vector2(0.5f, 0f);
-        rt.pivot     = new Vector2(0.5f, 0f);
+        rt.anchorMin        = new Vector2(0.5f, 0f);
+        rt.anchorMax        = new Vector2(0.5f, 0f);
+        rt.pivot            = new Vector2(0.5f, 0f);
         rt.anchoredPosition = new Vector2(0f, 110f);
-        rt.sizeDelta = new Vector2(820f, 64f);
+        rt.sizeDelta        = new Vector2(820f, 64f);
         panelGo.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.62f);
         panelGo.SetActive(false);
 
@@ -506,7 +510,7 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
             && s_promptText.text.Contains(displayName);
     }
 
-    // ── 编辑器辅助：在 Scene 视图把交互范围画出来 ───────────────────────────
+    // ── Editor Gizmo: visualise the interaction range in the Scene view ───────
 
     void OnDrawGizmosSelected()
     {
