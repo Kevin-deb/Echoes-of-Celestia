@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -50,6 +51,18 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
     [Tooltip("Distance auto-scale multiplier (x max side length of the vehicle bounds)")]
     [SerializeField] float distanceSizeMultiplier = 1.25f;
     [SerializeField] float camFollowSpeed = 10f;
+
+    [Header("Weapon (press F while driving to fire)")]
+    [Tooltip("Maximum range at which the vehicle weapon can lock onto an enemy")]
+    [SerializeField] float weaponRange = 90f;
+    [Tooltip("Yellow beam width — kept thicker than the enemy red laser")]
+    [SerializeField] float weaponLaserWidth = 0.55f;
+    [Tooltip("Seconds the yellow beam stays visible per shot")]
+    [SerializeField] float weaponLaserDuration = 0.14f;
+    [SerializeField] Color weaponLaserColor = new Color(1f, 0.92f, 0.2f, 1f);
+
+    LineRenderer _weaponLine;
+    Coroutine    _weaponRoutine;
 
     // ── Runtime state ─────────────────────────────────────────────────────────
     static SpaceVehicleSeat s_activeVehicle;
@@ -255,9 +268,102 @@ public sealed class SpaceVehicleSeat : MonoBehaviour
     void HandleOccupied()
     {
         if (Input.GetKeyDown(KeyCode.V)) { Exit(); return; }
+        if (Input.GetKeyDown(KeyCode.F)) FireWeapon();
 
         if (vehicleMode == Mode.Ground) DriveGround();
         else                            FlyAircraft();
+    }
+
+    // ── Weapon ────────────────────────────────────────────────────────────────
+
+    void FireWeapon()
+    {
+        EnsureWeaponLine();
+
+        var origin = GetWeaponMuzzle();
+        var enemy  = FindNearestEnemy(out var enemyPoint);
+
+        Vector3 end;
+        if (enemy != null)
+        {
+            end = enemyPoint;
+            enemy.ApplyWeaponHit();
+        }
+        else
+        {
+            // No target in range — fire a tracer straight ahead so the action still reads.
+            end = origin + ForwardDir * weaponRange;
+        }
+
+        HubCombatFx.PlayLaser(origin);
+
+        if (_weaponRoutine != null) StopCoroutine(_weaponRoutine);
+        _weaponRoutine = StartCoroutine(FlashWeapon(origin, end));
+    }
+
+    PrimaryEnemy FindNearestEnemy(out Vector3 point)
+    {
+        point = Vector3.zero;
+        PrimaryEnemy best = null;
+        float bestSqr = weaponRange * weaponRange;
+
+        foreach (var enemy in Object.FindObjectsOfType<PrimaryEnemy>())
+        {
+            if (enemy == null || !enemy.IsAlive) continue;
+
+            var center = enemy.GetCenter();
+            var sqr    = (center - transform.position).sqrMagnitude;
+            if (sqr <= bestSqr)
+            {
+                bestSqr = sqr;
+                best    = enemy;
+                point   = center;
+            }
+        }
+        return best;
+    }
+
+    Vector3 GetWeaponMuzzle()
+    {
+        RecomputeBounds();
+        var pivot = _hasBounds ? _ownBounds.center : transform.position;
+        var front = _hasBounds ? _ownBounds.extents.z : 1.5f;
+        return pivot + ForwardDir * (front * 0.6f) + Vector3.up * 0.3f;
+    }
+
+    void EnsureWeaponLine()
+    {
+        if (_weaponLine != null) return;
+
+        var lineGo = new GameObject("VehicleWeaponLaser");
+        lineGo.transform.SetParent(transform, false);
+
+        _weaponLine                = lineGo.AddComponent<LineRenderer>();
+        _weaponLine.useWorldSpace  = true;
+        _weaponLine.positionCount  = 2;
+        _weaponLine.startWidth     = weaponLaserWidth;   // thick, uniform beam
+        _weaponLine.endWidth       = weaponLaserWidth;
+        _weaponLine.numCapVertices = 6;
+        _weaponLine.enabled        = false;
+
+        var shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color");
+        if (shader != null)
+        {
+            var mat = new Material(shader) { color = weaponLaserColor };
+            _weaponLine.material   = mat;
+            _weaponLine.startColor = weaponLaserColor;
+            _weaponLine.endColor   = weaponLaserColor;
+        }
+    }
+
+    IEnumerator FlashWeapon(Vector3 start, Vector3 end)
+    {
+        _weaponLine.SetPosition(0, start);
+        _weaponLine.SetPosition(1, end);
+        _weaponLine.enabled = true;
+        yield return new WaitForSeconds(weaponLaserDuration);
+        _weaponLine.enabled = false;
+        _weaponRoutine      = null;
     }
 
     void DriveGround()

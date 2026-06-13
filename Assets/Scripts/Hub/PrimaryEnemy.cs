@@ -8,6 +8,10 @@ using UnityEngine;
 /// </summary>
 public sealed class PrimaryEnemy : MonoBehaviour
 {
+    /// <summary>Active sentinels in the scene (used by the main-story guide to target the nearest one).</summary>
+    public static readonly System.Collections.Generic.List<PrimaryEnemy> All =
+        new System.Collections.Generic.List<PrimaryEnemy>();
+
     [Header("Health")]
     [SerializeField] int maxHealth = 80;
 
@@ -27,6 +31,10 @@ public sealed class PrimaryEnemy : MonoBehaviour
     [SerializeField] float laserWidth           = 0.18f;
     [SerializeField] Color laserColor           = new Color(1f, 0.15f, 0.1f, 1f);
 
+    [Header("Destruction")]
+    [Tooltip("Number of vehicle-weapon hits required to scrap this enemy")]
+    [SerializeField] int hitsToDestroy = 2;
+
     [Header("References (leave empty for auto-find)")]
     [SerializeField] Transform turretBase;
     [SerializeField] Transform gun;
@@ -38,7 +46,10 @@ public sealed class PrimaryEnemy : MonoBehaviour
     AudioSource  _shootAudio;
     Coroutine    _laserRoutine;
 
-    public bool IsAlive => _health > 0;
+    int          _weaponHits;
+    bool         _scrapped;
+
+    public bool IsAlive => !_scrapped && _health > 0;
 
     void Awake()
     {
@@ -48,6 +59,13 @@ public sealed class PrimaryEnemy : MonoBehaviour
         EnsureLaserLine();
         _shootAudio = GetComponentInChildren<AudioSource>();
     }
+
+    void OnEnable()  { if (!All.Contains(this)) All.Add(this); }
+    void OnDisable() { All.Remove(this); }
+
+    /// <summary>Stable identity for main-story bookkeeping (name + rounded spawn position).</summary>
+    public string SentinelKey =>
+        $"{name}_{Mathf.RoundToInt(transform.position.x)}_{Mathf.RoundToInt(transform.position.z)}";
 
     void Update()
     {
@@ -73,7 +91,32 @@ public sealed class PrimaryEnemy : MonoBehaviour
         _health -= amount;
         if (_health > 0) return;
 
-        OnDeath();
+        Scrap();
+    }
+
+    /// <summary>
+    /// Called by the player's vehicle weapon. The enemy is scrapped after
+    /// <see cref="hitsToDestroy"/> hits, regardless of the health value.
+    /// </summary>
+    public void ApplyWeaponHit()
+    {
+        if (!IsAlive) return;
+
+        _weaponHits++;
+        if (_weaponHits >= hitsToDestroy)
+            Scrap();
+    }
+
+    /// <summary>World-space centre of the enemy, for targeting and effects.</summary>
+    public Vector3 GetCenter()
+    {
+        var col = GetComponentInChildren<Collider>();
+        if (col != null) return col.bounds.center;
+
+        var rend = GetComponentInChildren<Renderer>();
+        if (rend != null) return rend.bounds.center;
+
+        return transform.position + Vector3.up;
     }
 
     // ── Target resolution ─────────────────────────────────────────────────────
@@ -146,13 +189,26 @@ public sealed class PrimaryEnemy : MonoBehaviour
 
         var origin = muzzle != null ? muzzle.position : gun.position;
         var dir    = (aimPoint - origin).normalized;
-        var end    = origin + dir * attackRange;
 
-        if (Physics.Raycast(origin, dir, out var hit, attackRange, ~0, QueryTriggerInteraction.Ignore))
-            end = hit.point;
+        // Trace the beam, ignoring the enemy's own colliders. The laser visual stops
+        // at the first obstacle, and damage is only dealt when that first obstacle is
+        // actually the target (i.e. line of sight is clear). This prevents the laser
+        // from passing through scene props and from dealing "invisible" damage.
+        var end          = origin + dir * attackRange;
+        var lineOfSight  = false;
+        var hits = Physics.RaycastAll(origin, dir, attackRange, ~0, QueryTriggerInteraction.Ignore);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        foreach (var h in hits)
+        {
+            if (h.collider == null) continue;
+            if (h.collider.transform.IsChildOf(transform)) continue; // ignore self
+            end         = h.point;
+            lineOfSight = h.collider.transform == target || h.collider.transform.IsChildOf(target);
+            break;
+        }
 
-        // Vehicle armour blocks damage while the player is inside; the laser visual still plays.
-        if (!SpaceVehicleSeat.IsOccupied)
+        // Vehicle armour blocks damage while the player is inside.
+        if (lineOfSight && !SpaceVehicleSeat.IsOccupied)
         {
             var combat = target.GetComponent<HubCombatTarget>();
             if (combat != null && combat.IsAlive)
@@ -202,20 +258,59 @@ public sealed class PrimaryEnemy : MonoBehaviour
         _laserRoutine      = null;
     }
 
-    // ── Death / Initialisation ────────────────────────────────────────────────
+    // ── Destruction / Initialisation ──────────────────────────────────────────
 
-    void OnDeath()
+    /// <summary>
+    /// Scraps the enemy: stops all behaviour, greys out the model, and plays an
+    /// explosion effect. The wreck is left in the scene to show it has been disabled.
+    /// </summary>
+    void Scrap()
     {
+        if (_scrapped) return;
+        _scrapped = true;
+        _health   = 0;
+
+        StopAllCoroutines();
+        if (_laserLine != null) _laserLine.enabled = false;
+
+        // Disable other custom behaviours so the wreck loses all action ability.
         foreach (var mb in GetComponentsInChildren<MonoBehaviour>(true))
         {
-            if (mb == this) continue;
+            if (mb == null || mb == this) continue;
             mb.enabled = false;
         }
 
-        if (_laserLine != null)
-            _laserLine.enabled = false;
+        ApplyScrapAppearance();
+        HubCombatFx.SpawnExplosion(GetCenter(), GetApproxSize());
 
-        Destroy(gameObject, 0.5f);
+        // Feed the Main Story "Silence the Sentinels" trial.
+        MainStoryFlow.NotifySentinelDown(SentinelKey);
+    }
+
+    void ApplyScrapAppearance()
+    {
+        var scorched = new Color(0.32f, 0.30f, 0.28f, 1f);
+        foreach (var r in GetComponentsInChildren<Renderer>(true))
+        {
+            if (r == null) continue;
+            foreach (var mat in r.materials)
+            {
+                if (mat == null) continue;
+                if (mat.HasProperty("_Color"))         mat.color = scorched;
+                if (mat.HasProperty("_BaseColor"))     mat.SetColor("_BaseColor", scorched);
+                if (mat.HasProperty("_EmissionColor")) mat.SetColor("_EmissionColor", Color.black);
+            }
+        }
+    }
+
+    float GetApproxSize()
+    {
+        var rend = GetComponentInChildren<Renderer>();
+        if (rend == null) return 4f;
+        var b = rend.bounds;
+        foreach (var r in GetComponentsInChildren<Renderer>())
+            if (r != null) b.Encapsulate(r.bounds);
+        return Mathf.Max(b.size.x, b.size.y, b.size.z);
     }
 
     void AutoFindTurretParts()

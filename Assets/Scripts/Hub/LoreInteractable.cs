@@ -76,11 +76,44 @@ public sealed class LoreInteractable : MonoBehaviour
         float dist = Vector3.Distance(transform.position, _playerTransform.position);
         if (dist <= interactRange)
         {
-            ShowPrompt($"{interactPrompt}  [ F ]");
-            if (Input.GetKeyDown(KeyCode.F))
+            // Main-story chapters are gated: unread chapters can only be opened in story mode,
+            // strictly in journey order. Already-read chapters can be revisited freely.
+            if (IsMainStory)
             {
-                LoreReadingUI.Instance?.Open(categoryLabel, entryTitle, pages);
-                if (IsMainStory) MainStoryProgress.MarkReadByTitle(entryTitle);
+                var gate = MainStoryFlow.GetChapterGate(entryTitle, out var lockReason);
+                switch (gate)
+                {
+                    case MainStoryFlow.ChapterGate.AlreadyRead:
+                        ShowPrompt("Press F to revisit this chapter  [ F ]");
+                        if (Input.GetKeyDown(KeyCode.F))
+                            LoreReadingUI.Instance?.Open(categoryLabel, entryTitle, pages);
+                        break;
+
+                    case MainStoryFlow.ChapterGate.ReadableNow:
+                        ShowPrompt($"{interactPrompt}  [ F ]");
+                        if (Input.GetKeyDown(KeyCode.F))
+                        {
+                            LoreReadingUI.Instance?.Open(categoryLabel, entryTitle, pages);
+                            MainStoryProgress.MarkReadByTitle(entryTitle);
+                        }
+                        break;
+
+                    case MainStoryFlow.ChapterGate.NeedStoryMode:
+                        ShowPrompt("Main Story chapter — open Main Story [ J ] and press Start to begin");
+                        break;
+
+                    default: // LockedByOrder
+                        ShowPrompt(string.IsNullOrEmpty(lockReason)
+                            ? "Sealed — complete the current objective first"
+                            : $"Sealed — current objective: {lockReason}");
+                        break;
+                }
+            }
+            else
+            {
+                ShowPrompt($"{interactPrompt}  [ F ]");
+                if (Input.GetKeyDown(KeyCode.F))
+                    LoreReadingUI.Instance?.Open(categoryLabel, entryTitle, pages);
             }
         }
         else
@@ -94,6 +127,10 @@ public sealed class LoreInteractable : MonoBehaviour
         HideMyPrompt();
         All.Remove(this);
     }
+
+    /// <summary>Opens this entry's reading window directly (used by the Main Story window
+    /// to let the player revisit recovered chapters).</summary>
+    public void OpenReader() => LoreReadingUI.Instance?.Open(categoryLabel, entryTitle, pages);
 
     // ── 提示 UI ───────────────────────────────────────────────────────────────
 
