@@ -289,6 +289,48 @@ Acceptance criteria:
 
 ---
 
+### 21. Pixel Depths Dungeon Mini-Game
+
+**Status:** Done  
+**Labels:** `feature`, `combat`, `hub`
+
+Completed work:
+
+- Embedded a self-contained pixel-art dungeon roguelike (**Pixel Depths**) reachable from the Hub as a main-story trial.
+- Runtime portal injection on an existing Hub station object (no manual `Hub.unity` edits).
+- Procedural dungeon generator, melee / ranged combat, enemies, loot, traps, and meta-progress (best floor / gems).
+- Player and monster visuals built from the PixelFantasy 4-directional character system.
+- Bootstrap saves/restores `Physics2D.gravity`, target frame rate, and cursor state on entry/exit.
+- Headless smoke test available via the PixelDungeon editor tools.
+
+Acceptance criteria:
+
+- Player can enter Pixel Depths from the Hub and return.
+- Dungeon generates, combat works, and progress is recorded.
+- Exiting restores the 3D Hub state cleanly.
+
+---
+
+### 22. Seven-Step Main Story Flow
+
+**Status:** Done  
+**Labels:** `feature`, `narrative`, `hub`
+
+Completed work:
+
+- Expanded the main story into a seven-step flow that interleaves gameplay trials with lore volumes:
+  `Sky Assault trial → Volume I → Sentinels trial → Volume II → Pixel Depths trial → Volume III → Volume IV`.
+- Story state (volume reads and trial flags) resets each Play session for consistent demos; mini-game records persist.
+- Route guidance and quest UI updated to drive the player through the expanded sequence.
+
+Acceptance criteria:
+
+- Story advances only when the matching trial / lore step is completed.
+- Quest UI reflects the current step.
+- A demo always starts from a clean story state.
+
+---
+
 ## Review / Test
 
 ### 10. Full Hub Playtest Pass
@@ -533,6 +575,8 @@ Suggested project views:
 | Lore Reading | Playable |
 | Main Story Quest Guidance | Playable |
 | 2D Aerial Shooter | Playable |
+| Pixel Depths Dungeon | Playable |
+| Seven-Step Main Story Flow | Playable |
 | Health UI | Not started |
 | Player Attack | Not started |
 | Additional Historical Periods | Not started |
