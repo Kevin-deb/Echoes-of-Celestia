@@ -1,19 +1,69 @@
 # Echoes of Celestia
 
-Unity 游戏项目 — **Echoes of Celestia**（天穹回响）。
+**Echoes of Celestia** is a Unity-based 3D exploration game about uncovering the forbidden history of a lost civilisation called Celestia.
 
-## 环境要求
+The current playable vertical slice focuses on the **Space Civilisation Period**. It includes a moon-surface 3D Hub, interactive vehicles, enemy drones, readable lore records, main-story route guidance, player health / respawn logic, and a connected 2D aerial shooter mini-game.
 
-- [Unity Hub](https://unity.com/download) 与项目 `ProjectSettings/ProjectVersion.txt` 中记录的编辑器版本一致
+## Requirements
 
-## 打开项目
+- Unity Hub
+- The Unity Editor version recorded in `ProjectSettings/ProjectVersion.txt`
 
-1. 克隆本仓库
-2. 在 Unity Hub 中选择 **Add** → 指向本仓库根目录
-3. 打开项目后由 Unity 自动生成 `Library/` 等本地缓存（已加入 `.gitignore`，无需提交）
+## Opening the Project
 
-## 仓库说明
+1. Clone this repository.
+2. Open Unity Hub.
+3. Choose **Add** and select the repository root folder.
+4. Unity will generate local cache folders such as `Library/`, `Temp/`, and `Logs/`. These folders are intentionally ignored by Git and should not be committed.
 
-本仓库仅包含可版本控制的 Unity 源文件（`Assets/`、`Packages/`、`ProjectSettings/` 等），不包含 `Library/`、`Temp/`、`Logs/` 等本地生成目录。
+## Repository Contents
 
-第三方素材包 `Assets/_Creepy_Cat`（3D Scifi Kit）与 `Assets/PixelFantasy` 因体积与授权原因未纳入 GitHub。若从仓库克隆后 Hub 场景或后续开发内容出现缺失引用，请在本地 Unity 项目中自行导入对应素材包（与当前工作区相同的目录结构即可）。
+This repository contains the version-controlled Unity project files, including:
+
+- `Assets/`
+- `Packages/`
+- `ProjectSettings/`
+- `Tools/`
+- Project documentation and planning files
+
+Local generated folders such as `Library/`, `Temp/`, `Logs/`, and other machine-specific Unity cache files are excluded.
+
+## Third-Party Assets
+
+Some third-party asset packs are **not included** in this GitHub repository because of file size and licensing restrictions.
+
+Not included:
+
+- `Assets/_Creepy_Cat` — 3D Scifi Kit Vol 3
+- `Assets/PixelFantasy`
+
+If you clone this repository and find missing references in the Hub scene or future development content, import the corresponding asset packs locally using the same folder structure as the original working project.
+
+## Current Development Status
+
+The current milestone is tracked in GitHub Projects:
+
+- **Project:** Echoes of Celestia - Master Development Kanban
+- **Milestone:** Space Civilisation Vertical Slice
+
+Implemented systems include:
+
+- Space Hub scene reconstruction
+- Third-person Player controller
+- Vehicle interaction system
+- Enemy drone combat
+- Player health, death, and respawn
+- Lore interaction system
+- Main Story quest UI and golden route guidance
+- 2D aerial shooter integration
+
+See `KANBAN.md` and the GitHub Project board for detailed progress.
+
+## Documentation
+
+- `Echoes_of_Celestia_Game_Concept_and_Design.md` — game concept and design document
+- `KANBAN.md` — local Markdown mirror of the GitHub Kanban board
+
+## Notes
+
+This project is currently developed as an educational game development module submission. Some models are placeholders and would need to be replaced or relicensed for a commercial release.
