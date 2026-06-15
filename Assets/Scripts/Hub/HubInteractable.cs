@@ -1,8 +1,9 @@
 using UnityEngine;
 
 /// <summary>
-/// 挂在带 IsTrigger 的入口碰撞体上。玩家进入后提示按 F，打开选关 UI。
-/// 请将玩家角色 Tag 设为 Player（与 Starter Assets 默认一致）。
+/// Goes on an entrance collider set to IsTrigger. Prompts the player to press F
+/// when they step inside, which opens the level-select UI. Tag the player as
+/// "Player" (matching the Starter Assets default).
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public sealed class HubInteractable : MonoBehaviour

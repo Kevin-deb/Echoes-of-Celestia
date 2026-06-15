@@ -4,7 +4,8 @@ using UnityEngine.UI;
 namespace EchoesOfCelestia.Plane2D
 {
     /// <summary>
-    /// 左上角操作提示（原暂停页按钮已由 PlaneSceneInputController 接管）。
+    /// Top-left controls hint. (The actual pause menu is handled by
+    /// PlaneSceneInputController now.)
     /// </summary>
     public sealed class PauseMenuExtension : MonoBehaviour
     {

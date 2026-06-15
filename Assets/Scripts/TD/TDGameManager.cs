@@ -2,7 +2,8 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// 波次、生命、敌人生成与胜负。将敌人预制体放在路点 0 附近生成。
+/// Runs the waves, lives, enemy spawning and win/lose checks. Enemies spawn at
+/// waypoint 0 and walk the path.
 /// </summary>
 public sealed class TDGameManager : MonoBehaviour
 {

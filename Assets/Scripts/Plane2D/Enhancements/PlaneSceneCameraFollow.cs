@@ -3,8 +3,9 @@ using UnityEngine;
 namespace EchoesOfCelestia.Plane2D
 {
     /// <summary>
-    /// 飞机大战相机改为俯视紧贴玩家（CameraStyles.Overhead），避免预制体默认 Free/Locked 导致镜头不居中。
-    /// 需在 CameraController.Update 之前运行。
+    /// Forces the plane-scene camera into a top-down lock on the player
+    /// (CameraStyles.Overhead). The prefab ships as Free/Locked, which leaves the
+    /// view off-centre. Has to run before CameraController.Update.
     /// </summary>
     [DefaultExecutionOrder(-100)]
     public sealed class PlaneSceneCameraFollow : MonoBehaviour

@@ -6,28 +6,29 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// 每次打开 Hub 场景时，自动将 <see cref="LoreInteractable"/> 安装到指定道具上，
-/// 并写入剧情文本。也可通过菜单手动触发：Echoes / Hub / 安装剧情交互组件
+/// Every time the Hub scene opens, this installs <see cref="LoreInteractable"/> on
+/// the configured props and writes their lore text. You can also run it by hand
+/// from the menu: Echoes / Hub / Install Lore Interactables.
 /// </summary>
 [InitializeOnLoad]
 static class SpaceHubLoreSetupEditor
 {
     const string HubScenePath = "Assets/Scenes/Space/Hub.unity";
     const string MergedCopy   = "Tools/Hub.unity.merged";
-    const string MenuPath     = "Echoes/Hub/安装剧情交互组件";
+    const string MenuPath     = "Echoes/Hub/Install Lore Interactables";
 
-    // ── 剧情段落数据 ──────────────────────────────────────────────────────────
+    // Lore entry data
 
-    /// <summary>一段剧情的完整配置。</summary>
+    /// <summary>Full configuration for one lore entry.</summary>
     struct LoreConfig
     {
         /// <summary>
-        /// 查找路径：从场景根向下，用 '/' 分隔。可用 '*' 表示"同名的第 n 个"（n 从 0 起）。
-        /// 示例："_Props/P_Container_04"  或  "Moon_Closed_A/Props/P_Electric_Tower_01"
+        /// Lookup path from the scene root, '/'-separated. For example:
+        /// "_Props/P_Container_04" or "Moon_Closed_A/Props/P_Electric_Tower_01".
         /// </summary>
         public string ObjectPath;
 
-        /// <summary>当同一层级有多个同名子物体时，取第几个（0-based）。</summary>
+        /// <summary>When several siblings share the name, which one to take (0-based).</summary>
         public int SiblingIndex;
 
         public string Prompt;
@@ -38,7 +39,7 @@ static class SpaceHubLoreSetupEditor
 
     static readonly LoreConfig[] Configs = new LoreConfig[]
     {
-        // ── 主线 Vol I ─────────────────────────────────────────────────────────
+        // Main story, Volume I ─────────────────────────────────────────────────────────
         new LoreConfig
         {
             ObjectPath   = "_Props/P_Container_04",
@@ -61,7 +62,7 @@ static class SpaceHubLoreSetupEditor
             }
         },
 
-        // ── 主线 Vol II ────────────────────────────────────────────────────────
+        // Main story, Volume II ────────────────────────────────────────────────────────
         new LoreConfig
         {
             ObjectPath   = "Moon_Closed_A/Props/P_Electric_Tower_01",
@@ -84,7 +85,7 @@ static class SpaceHubLoreSetupEditor
             }
         },
 
-        // ── 主线 Vol III ───────────────────────────────────────────────────────
+        // Main story, Volume III ───────────────────────────────────────────────────────
         new LoreConfig
         {
             ObjectPath   = "_Props/P_Tank_Light_Dark_Mark_01",
@@ -110,7 +111,7 @@ static class SpaceHubLoreSetupEditor
             }
         },
 
-        // ── 主线 Vol IV ────────────────────────────────────────────────────────
+        // Main story, Volume IV ────────────────────────────────────────────────────────
         new LoreConfig
         {
             ObjectPath   = "_Props/P_Tank_Light_Dark_Mark_01",
@@ -132,7 +133,7 @@ static class SpaceHubLoreSetupEditor
             }
         },
 
-        // ── 支线：The Last Cartographer ───────────────────────────────────────
+        // Side story, The Last Cartographer ───────────────────────────────────────
         new LoreConfig
         {
             ObjectPath   = "Moon_Closed_A/Props/P_Radar_Pylon_01",
@@ -159,7 +160,7 @@ static class SpaceHubLoreSetupEditor
             }
         },
 
-        // ── 支线：Letters to Lia ──────────────────────────────────────────────
+        // Side story, Letters to Lia ──────────────────────────────────────────────
         new LoreConfig
         {
             ObjectPath   = "_Props/P_Container_03",
@@ -186,7 +187,7 @@ static class SpaceHubLoreSetupEditor
             }
         },
 
-        // ── 支线：The Elysium Files ───────────────────────────────────────────
+        // Side story, The Elysium Files ───────────────────────────────────────────
         new LoreConfig
         {
             ObjectPath   = "Moon_Closed_A/Props/P_Base_ComStation_A/_Props/P_Desktop_Computer_01",
@@ -213,7 +214,7 @@ static class SpaceHubLoreSetupEditor
             }
         },
 
-        // ── 支线：The Ember Compact ───────────────────────────────────────────
+        // Side story, The Ember Compact ───────────────────────────────────────────
         new LoreConfig
         {
             ObjectPath   = "Moon_Closed_A/Props/P_Base_ComStation_A/_Props/P_Console_Small_01",
@@ -242,14 +243,14 @@ static class SpaceHubLoreSetupEditor
         }
     };
 
-    // ── 入口 ──────────────────────────────────────────────────────────────────
+    // Entry points ──────────────────────────────────────────────────────────────────
 
     static SpaceHubLoreSetupEditor()
     {
         EditorSceneManager.sceneOpened -= OnSceneOpened;
         EditorSceneManager.sceneOpened += OnSceneOpened;
 
-        // 脚本编译/重载后也立即运行一次，处理"场景已打开但 sceneOpened 不再触发"的情况
+        // Also run once right after a compile/reload, to cover the case where the scene is already open and sceneOpened won't fire again
         EditorApplication.delayCall -= RunSetup;
         EditorApplication.delayCall += RunSetup;
     }
@@ -286,7 +287,7 @@ static class SpaceHubLoreSetupEditor
             var target = ResolveTarget(hubScene, cfg.ObjectPath, cfg.SiblingIndex);
             if (target == null)
             {
-                Debug.LogWarning($"[LoreSetup] 未找到对象：{cfg.ObjectPath}[{cfg.SiblingIndex}]");
+                Debug.LogWarning($"[LoreSetup] Object not found: {cfg.ObjectPath}[{cfg.SiblingIndex}]");
                 missing++;
                 continue;
             }
@@ -311,23 +312,24 @@ static class SpaceHubLoreSetupEditor
             EditorUtility.SetDirty(target.gameObject);
         }
 
-        // 无论是否新增，只要 Hub 场景在编辑器内打开就保存，确保组件数据持久化
+        // Save whenever the Hub scene is open in the editor, new components or not, so the data persists
         EditorSceneManager.SaveScene(hubScene);
         UpdateMergedCopy();
-        Debug.Log($"[LoreSetup] 完成：新增 {installed} 个，更新 {updated} 个，未找到 {missing} 个。场景已保存。");
+        Debug.Log($"[LoreSetup] Done: {installed} added, {updated} updated, {missing} missing. Scene saved.");
     }
 
-    // ── 路径解析 ──────────────────────────────────────────────────────────────
+    // Path resolution ──────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// 按 '/' 分隔的路径逐级找子物体；最后一段允许有多个同名兄弟，用 siblingIndex 取第 n 个。
+    /// Walks the '/'-separated path down the hierarchy. The final segment may have
+    /// several same-named siblings; siblingIndex picks the nth one.
     /// </summary>
     static Transform ResolveTarget(Scene scene, string path, int siblingIndex)
     {
         var parts = path.Split('/');
         if (parts.Length == 0) return null;
 
-        // 找根节点（场景直接根物体）
+        // Find the root (a direct root object of the scene)
         Transform current = null;
         foreach (var root in scene.GetRootGameObjects())
         {
@@ -335,14 +337,14 @@ static class SpaceHubLoreSetupEditor
         }
         if (current == null) return null;
 
-        // 逐级向下查找
+        // Walk down level by level
         for (int i = 1; i < parts.Length - 1; i++)
         {
             current = FindFirstDirectChild(current, parts[i]);
             if (current == null) return null;
         }
 
-        // 最后一段：按同名兄弟索引取
+        // Final segment: pick by same-name sibling index
         if (parts.Length > 1)
         {
             string lastName = parts[parts.Length - 1];
@@ -359,7 +361,7 @@ static class SpaceHubLoreSetupEditor
             var c = parent.GetChild(i);
             if (c.name == name) return c;
         }
-        // 如果直接子级没找到，递归搜索（处理深度嵌套的情况）
+        // Not found among direct children — recurse to handle deep nesting
         for (int i = 0; i < parent.childCount; i++)
         {
             var found = FindFirstDirectChild(parent.GetChild(i), name);
@@ -371,7 +373,7 @@ static class SpaceHubLoreSetupEditor
     static Transform FindNthDirectChild(Transform parent, string name, int n)
     {
         int count = 0;
-        // 先查直接子级
+        // Direct children first
         for (int i = 0; i < parent.childCount; i++)
         {
             var c = parent.GetChild(i);
@@ -379,7 +381,7 @@ static class SpaceHubLoreSetupEditor
             if (count == n) return c;
             count++;
         }
-        // 再递归（子树中的第 n 个同名物体）
+        // Then recurse: the nth same-named object in the subtree
         foreach (Transform child in parent)
         {
             var found = FindNthInSubtree(child, name, ref count, n);
@@ -403,7 +405,7 @@ static class SpaceHubLoreSetupEditor
         return null;
     }
 
-    // ── SerializedObject 辅助 ─────────────────────────────────────────────────
+    // SerializedObject helpers ─────────────────────────────────────────────────
 
     static void SetString(SerializedObject so, string propName, string value)
     {
@@ -420,11 +422,11 @@ static class SpaceHubLoreSetupEditor
             p.GetArrayElementAtIndex(i).stringValue = values[i];
     }
 
-    // ── 碰撞体 ────────────────────────────────────────────────────────────────
+    // Colliders ────────────────────────────────────────────────────────────────
 
     static void EnsureTriggerCollider(Transform t)
     {
-        // 只在完全没有碰撞体时才添加（很多模型本身自带 MeshCollider 等）
+        // Only add one when there's no collider at all (many models already ship a MeshCollider, etc.)
         if (t.GetComponentInChildren<Collider>(true) != null) return;
 
         var box = t.gameObject.AddComponent<BoxCollider>();
@@ -433,7 +435,7 @@ static class SpaceHubLoreSetupEditor
         box.center = new Vector3(0f, 1.5f, 0f);
     }
 
-    // ── 更新稳定副本 ──────────────────────────────────────────────────────────
+    // Keep the stable backup copy in sync ──────────────────────────────────────────────────────────
 
     static void UpdateMergedCopy()
     {
@@ -450,7 +452,7 @@ static class SpaceHubLoreSetupEditor
         }
         catch (System.Exception e)
         {
-            Debug.LogWarning($"[LoreSetup] 更新参考副本失败：{e.Message}");
+            Debug.LogWarning($"[LoreSetup] Failed to update the reference copy: {e.Message}");
         }
     }
 }

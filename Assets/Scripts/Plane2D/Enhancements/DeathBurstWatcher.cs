@@ -3,8 +3,9 @@ using UnityEngine;
 namespace EchoesOfCelestia.Plane2D
 {
     /// <summary>
-    /// 敌人死亡时在死亡位置生成粒子爆破特效，
-    /// 不依赖任何外部资源，使用内建白色精灵 + ParticleSystem 即时生成。
+    /// Spawns a small particle burst wherever an enemy dies. No external assets
+    /// involved — it builds the effect on the fly from the built-in white sprite
+    /// plus a ParticleSystem.
     /// </summary>
     public sealed class DeathBurstWatcher : MonoBehaviour
     {

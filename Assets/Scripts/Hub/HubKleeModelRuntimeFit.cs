@@ -195,7 +195,7 @@ public sealed class HubKleeModelRuntimeFit : MonoBehaviour
         if (material.HasProperty("_Smoothness"))
             material.SetFloat("_Smoothness", 0.25f);
 
-        // 月球场景整体偏暗，添加少量自发光让角色色彩更清晰。
+        // The moon scene is fairly dark, so add a little emission to keep the character's colours readable.
         if (material.HasProperty("_EmissionColor"))
         {
             material.EnableKeyword("_EMISSION");

@@ -3,8 +3,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 挂在 Hub 场景任意道具上。玩家靠近并按 F 键后，打开剧情阅读窗口。
-/// 所有道具共享一个提示 UI 实例，不会同时出现多个提示框。
+/// Attach to any prop in the Hub. When the player gets close and presses F, it
+/// opens the lore reading window. Every prop shares one prompt UI instance, so you
+/// never end up with two prompt boxes on screen at once.
 /// </summary>
 public sealed class LoreInteractable : MonoBehaviour
 {
@@ -18,29 +19,29 @@ public sealed class LoreInteractable : MonoBehaviour
         !string.IsNullOrEmpty(categoryLabel) && categoryLabel.Contains("Main Chronicle");
 
     [Header("Interaction")]
-    [Tooltip("从对象 pivot 到玩家的最大交互距离（米）")]
+    [Tooltip("Max interaction distance from this object's pivot to the player, in metres.")]
     [SerializeField] float interactRange = 7f;
-    [Tooltip("出现在屏幕底部的简短提示文字（全英文）")]
+    [Tooltip("Short hint shown along the bottom of the screen.")]
     [SerializeField] string interactPrompt = "Press F to read records";
 
     [Header("Lore")]
-    [Tooltip("显示在窗口顶部的分类标签，如 Main Chronicle · Volume I")]
+    [Tooltip("Category label shown at the top of the window, e.g. Main Chronicle · Volume I.")]
     [SerializeField] string categoryLabel = "Main Chronicle";
-    [Tooltip("该段剧情的标题")]
+    [Tooltip("Title of this lore entry.")]
     [SerializeField] string entryTitle = "Untitled Entry";
-    [Tooltip("每个元素为窗口中的一页文本，支持 \\n 换行")]
+    [Tooltip("One element per page of text; use \\n for a line break.")]
     [TextArea(5, 14)]
     [SerializeField] string[] pages = { "No content." };
 
-    // ── 共享提示 UI ───────────────────────────────────────────────────────────
+    // Shared prompt UI — one instance across every interactable
     static GameObject        s_promptRoot;
     static Text              s_promptText;
     static LoreInteractable  s_activePromptOwner;
 
-    // ── 缓存 ──────────────────────────────────────────────────────────────────
+    // Cached lookups
     Transform _playerTransform;
 
-    // ── Unity 生命周期 ────────────────────────────────────────────────────────
+    // Unity lifecycle
 
     void Awake()
     {
@@ -60,10 +61,10 @@ public sealed class LoreInteractable : MonoBehaviour
 
     void Update()
     {
-        // 阅读 UI 打开时，所有 LoreInteractable 暂停检测
+        // While the reading window is open, nothing should react
         if (LoreReadingUI.IsAnyOpen) { HideMyPrompt(); return; }
 
-        // 玩家在载具内时不检测
+        // Don't react while the player is sitting in a vehicle
         if (SpaceVehicleSeat.IsOccupied) { HideMyPrompt(); return; }
 
         if (_playerTransform == null)
@@ -132,7 +133,7 @@ public sealed class LoreInteractable : MonoBehaviour
     /// to let the player revisit recovered chapters).</summary>
     public void OpenReader() => LoreReadingUI.Instance?.Open(categoryLabel, entryTitle, pages);
 
-    // ── 提示 UI ───────────────────────────────────────────────────────────────
+    // Prompt UI
 
     void ShowPrompt(string msg)
     {
@@ -210,7 +211,7 @@ public sealed class LoreInteractable : MonoBehaviour
         s_promptText = text;
     }
 
-    // ── Gizmo（Scene 视图显示交互范围）────────────────────────────────────────
+    // Gizmo — draws the interaction range in the Scene view
     void OnDrawGizmosSelected()
     {
         Gizmos.color = new Color(0.4f, 0.8f, 1f, 0.3f);

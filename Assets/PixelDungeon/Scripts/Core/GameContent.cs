@@ -76,7 +76,7 @@ namespace PixelDungeon
             new() { id="stormstaff", name="Storm Staff", charWeapon="ArchStaff", kind=WeaponKind.Staff, element=Element.Lightning, damage=20, fireRate=2.0f, projSpeed=16, pierce=2, knockback=4, range=2.2f, energyCost=10 },
             new() { id="naturewand", name="Nature Wand", charWeapon="NatureWand", kind=WeaponKind.Wand, element=Element.Poison, damage=10, fireRate=3.0f, projSpeed=12, knockback=3, range=2.0f, energyCost=5 },
             new() { id="elderstaff", name="Elder Staff", charWeapon="ElderStaff", kind=WeaponKind.Staff, element=Element.Ice, damage=34, fireRate=1.3f, projSpeed=11, pierce=1, knockback=8, range=2.4f, energyCost=14 },
-            // --- Cannon-style: flame spread (design doc: 火焰法杖喷一片) ---
+            // --- Cannon-style: flame spread (design doc: flame staff sprays a fan) ---
             new() { id="flamestaff", name="Flame Staff", charWeapon="FlameStaff", kind=WeaponKind.Cannon, element=Element.Fire, damage=9, fireRate=2.4f, projSpeed=10, projectiles=5, spread=46, knockback=3, range=1.0f, energyCost=12 },
         };
 

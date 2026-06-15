@@ -3,8 +3,9 @@ using UnityEngine;
 namespace EchoesOfCelestia.Plane2D
 {
     /// <summary>
-    /// 基于 trauma 模型的相机震屏：trauma^2 控制振幅，使用 Perlin 噪声生成方向，
-    /// 自动衰减，避免堆栈过强。
+    /// Trauma-based camera shake: amplitude follows trauma^2, the direction comes
+    /// from Perlin noise, and trauma decays on its own so repeated hits don't pile
+    /// up into something nauseating.
     /// </summary>
     public sealed class CameraShakeImpulse : MonoBehaviour
     {

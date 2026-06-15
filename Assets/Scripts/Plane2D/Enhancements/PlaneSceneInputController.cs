@@ -6,8 +6,9 @@ using UnityEngine.UI;
 namespace EchoesOfCelestia.Plane2D
 {
     /// <summary>
-    /// ESC：返回 3D Hub；空格：暂停/继续（含 Unpause 按钮）。
-    /// 禁用原 UIManager 的 pause InputAction，避免与 ESC 暂停冲突。
+    /// Esc returns to the 3D Hub; Space toggles pause (the overlay also has an
+    /// Unpause button). Also switches off the original UIManager's pause
+    /// InputAction so it doesn't clash with our Esc handling.
     /// </summary>
     public sealed class PlaneSceneInputController : MonoBehaviour
     {

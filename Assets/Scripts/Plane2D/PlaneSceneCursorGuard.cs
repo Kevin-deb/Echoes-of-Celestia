@@ -4,8 +4,10 @@ using UnityEngine.SceneManagement;
 namespace EchoesOfCelestia.Plane2D
 {
     /// <summary>
-    /// 3D Hub 会锁定并隐藏鼠标；进入飞机大战时需要恢复为 2D 原项目的可见受限光标。
-    /// 否则玩家飞机会用被锁定的鼠标坐标计算朝向，导致点击后光标消失且朝向异常。
+    /// The 3D Hub locks and hides the cursor. The plane scenes need it back the
+    /// way the original 2D project expects — visible but confined to the window.
+    /// Otherwise the player plane aims from a locked cursor position, so a click
+    /// makes the cursor disappear and the heading goes haywire.
     /// </summary>
     [DefaultExecutionOrder(-10000)]
     public sealed class PlaneSceneCursorGuard : MonoBehaviour

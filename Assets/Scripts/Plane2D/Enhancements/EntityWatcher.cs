@@ -4,8 +4,8 @@ using UnityEngine;
 namespace EchoesOfCelestia.Plane2D
 {
     /// <summary>
-    /// 每帧扫描 Health/Enemy 状态变化，把伤害与死亡事件转换为 PlaneGameEvents。
-    /// 不修改任何原脚本。
+    /// Polls Health/Enemy state each frame and translates damage and deaths into
+    /// PlaneGameEvents. Doesn't touch any of the original scripts.
     /// </summary>
     public sealed class EntityWatcher : MonoBehaviour
     {

@@ -5,8 +5,9 @@ using UnityEngine.UI;
 namespace EchoesOfCelestia.Plane2D
 {
     /// <summary>
-    /// 敌人死亡时在死亡位置上方弹出 "+score" 浮字，向上飘并淡出。
-    /// 通过专属世界空间 Canvas 渲染，避免与原游戏 UI 冲突。
+    /// Floats a "+score" label up from where an enemy died, drifting upward and
+    /// fading out. Drawn on its own world-space Canvas so it never collides with
+    /// the game's existing UI.
     /// </summary>
     public sealed class ScorePopupWatcher : MonoBehaviour
     {

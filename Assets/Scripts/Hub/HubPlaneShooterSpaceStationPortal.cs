@@ -3,8 +3,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// 将 Hub 中进入飞机大战的门替换为空间站模型。
-/// 只替换视觉表现，保留原 Trigger/HubDoorInteractable 的 F 键进入逻辑。
+/// Swaps the Hub's plane-shooter door for a space-station model. Visual only —
+/// the original Trigger / HubDoorInteractable F-to-enter logic is left intact.
 /// </summary>
 public sealed class HubPlaneShooterSpaceStationPortal : MonoBehaviour
 {

@@ -4,7 +4,7 @@ using UnityEngine;
 namespace PixelDungeon
 {
     /// <summary>
-    /// "Feel" layer (design doc 3.4 手感三件套): screen shake, hit-stop, and a quick
+    /// "Feel" layer (design doc 3.4, the feel trifecta): screen shake, hit-stop, and a quick
     /// camera-anchored flash. A lightweight singleton created by Bootstrap.
     /// </summary>
     public class Juice : MonoBehaviour

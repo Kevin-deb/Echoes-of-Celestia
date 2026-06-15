@@ -3,8 +3,9 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
-/// 挂在「门」的触发器上：玩家进入后显示提示，按 F 进入目标场景。
-/// 支持按 GameSession 的已解锁关卡数进行关卡门禁。
+/// Lives on a door's trigger: shows a prompt when the player steps in and loads
+/// the target scene on F. Entry can be gated behind GameSession's unlocked-level
+/// count.
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public sealed class HubDoorInteractable : MonoBehaviour

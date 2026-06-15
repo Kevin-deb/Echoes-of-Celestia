@@ -5,8 +5,9 @@ using UnityEngine;
 namespace EchoesOfCelestia.Plane2D
 {
     /// <summary>
-    /// 当玩家或敌人受伤时，让其 Sprite 短暂泛白闪烁，提供命中反馈。
-    /// 使用 SpriteRenderer.color 修改实例色，恢复原色。
+    /// Flashes a sprite white for a moment when the player or an enemy takes a
+    /// hit — just some quick visual feedback. Tints SpriteRenderer.color and
+    /// restores the original colour once the flash is done.
     /// </summary>
     public sealed class HitFlashWatcher : MonoBehaviour
     {

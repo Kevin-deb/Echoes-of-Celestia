@@ -3,8 +3,9 @@ using UnityEngine;
 namespace EchoesOfCelestia.Plane2D
 {
     /// <summary>
-    /// 程序化背景星空：使用 ParticleSystem 渲染慢速向下滚动的星点，
-    /// 放在 Background 排序层之后，作为氛围层不阻挡玩法。
+    /// Procedural background starfield. A ParticleSystem drips slow, downward-
+    /// scrolling specks behind the Background sorting layer — pure atmosphere,
+    /// nothing that gets in the way of gameplay.
     /// </summary>
     public sealed class Starfield : MonoBehaviour
     {

@@ -26,7 +26,7 @@ namespace PixelDungeon
     {
         public static GameManager I;
 
-        /// <summary>Scene名称:与 Echoes of Celestia 的 SceneNames.Hub 保持一致。</summary>
+        /// <summary>Scene name — must match Echoes of Celestia's SceneNames.Hub.</summary>
         public const string HubSceneName = "Hub";
 
         public GameDatabase Db { get; private set; }

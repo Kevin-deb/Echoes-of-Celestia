@@ -2,7 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 鼠标左键在地面网格上放置炮塔；占用格用字典记录。
+/// Left-click to drop a turret on the ground grid; a dictionary keeps track of
+/// which cells are already taken.
 /// </summary>
 public sealed class SimpleGridBuilder : MonoBehaviour
 {

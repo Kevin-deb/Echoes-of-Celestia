@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 将子物体顺序作为路点，或使用显式数组。
+/// Path for walkers — uses the explicit waypoint array (fall back to child order).
 /// </summary>
 public sealed class WaypointPath : MonoBehaviour
 {

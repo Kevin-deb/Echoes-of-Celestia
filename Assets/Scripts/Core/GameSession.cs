@@ -1,7 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// 跨场景数据：金币、解锁关卡等。使用 DontDestroyOnLoad + PlayerPrefs 简易持久化。
+/// Cross-scene state — gold, unlocked levels and the like. Survives loads via
+/// DontDestroyOnLoad and is persisted through PlayerPrefs (nothing fancy).
 /// </summary>
 public sealed class GameSession : MonoBehaviour
 {

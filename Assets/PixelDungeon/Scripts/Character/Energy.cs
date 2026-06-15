@@ -5,7 +5,7 @@ namespace PixelDungeon
 {
     /// <summary>
     /// Mana/energy pool (design doc 3.3): ranged & magic weapons spend it, it regenerates after a
-    /// short delay. This is the "風筝 vs 搏命" resource tension between ranged and melee play.
+    /// short delay. This is the "kite vs. brawl" resource tension between ranged and melee play.
     /// </summary>
     public class Energy : MonoBehaviour
     {

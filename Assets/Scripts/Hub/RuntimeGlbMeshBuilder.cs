@@ -4,8 +4,8 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 /// <summary>
-/// 轻量 GLB 运行时 Mesh 读取器。
-/// 仅覆盖当前 Hi3D 导出的简单 GLB：单 buffer、POSITION/NORMAL/TEXCOORD_0/indices。
+/// Minimal runtime GLB mesh reader. Only covers the simple GLBs Hi3D currently
+/// exports: a single buffer with POSITION/NORMAL/TEXCOORD_0/indices.
 /// </summary>
 public static class RuntimeGlbMeshBuilder
 {

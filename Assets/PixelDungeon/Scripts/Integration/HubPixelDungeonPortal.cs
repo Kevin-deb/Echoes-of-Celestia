@@ -6,10 +6,11 @@ using UnityEngine.UI;
 namespace PixelDungeon.Integration
 {
     /// <summary>
-    /// Hub 集成:在 Hub 场景加载时自动给 P_Base_ComStation_A 装上交互触发器,
-    /// 玩家走近后按 F 进入 Pixel Dungeon 小游戏。
-    /// 与 HubPlaneShooterSpaceStationPortal / PlaneGameBootstrap 相同的运行时注入模式 ——
-    /// 不修改 Hub 场景文件和任何现有脚本。
+    /// Hub integration: when the Hub scene loads, this bolts an interaction
+    /// trigger onto P_Base_ComStation_A so the player can walk up and press F to
+    /// drop into the Pixel Dungeon mini-game. Same runtime-injection trick as
+    /// HubPlaneShooterSpaceStationPortal / PlaneGameBootstrap — it never edits the
+    /// Hub scene file or any existing script.
     /// </summary>
     public static class HubPixelDungeonPortal
     {
@@ -67,7 +68,7 @@ namespace PixelDungeon.Integration
             portal.transform.SetParent(station.transform, false);
             portal.transform.localPosition = Vector3.zero;
 
-            // 与飞机大战门相同的触发器手感(世界尺寸,不随站台缩放)。
+            // Same trigger feel as the plane-shooter door: sized in world units so it doesn't scale with the station.
             var trigger = portal.AddComponent<BoxCollider>();
             trigger.isTrigger = true;
             var scale = station.transform.lossyScale;
@@ -81,8 +82,9 @@ namespace PixelDungeon.Integration
     }
 
     /// <summary>
-    /// 玩家进入触发器后显示「Press F to enter Pixel Dungeon」提示,按 F 加载小游戏场景。
-    /// 提示 UI 自带(运行时创建),不依赖场景里已有的 UI 对象。
+    /// Shows a "Press F to enter Pixel Dungeon" prompt while the player is inside
+    /// the trigger, and loads the mini-game scene on F. The prompt UI is built at
+    /// runtime, so it doesn't rely on any UI objects already in the scene.
     /// </summary>
     public sealed class PixelDungeonStationInteractable : MonoBehaviour
     {

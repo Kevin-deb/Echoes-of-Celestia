@@ -1,7 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// 若场景中未放置 GameSession，则在首场景加载后自动创建一个，避免选关/经济逻辑空引用。
+/// If a scene has no GameSession placed in it, create one right after the first
+/// scene loads so the level-select and economy code never hit a null reference.
 /// </summary>
 static class GameSessionBootstrap
 {

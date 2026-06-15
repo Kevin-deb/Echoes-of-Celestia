@@ -1,5 +1,5 @@
 /// <summary>
-/// 在 Build Settings 中注册同名场景后，这些常量才会生效。
+/// These only resolve once the matching scenes are added to Build Settings.
 /// </summary>
 public static class SceneNames
 {

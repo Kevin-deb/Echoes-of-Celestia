@@ -4,15 +4,16 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// 全局单例 UI：展示剧情文本窗口，支持翻页与关闭。
-/// 由 LoreInteractable 调用 Open / Close；运行时自动创建，无需挂在场景对象上。
+/// Global singleton UI: the lore text window, with paging and a close button.
+/// LoreInteractable drives it through Open / Close. It's created at runtime, so it
+/// doesn't need to live on a scene object.
 /// </summary>
 public sealed class LoreReadingUI : MonoBehaviour
 {
     public static LoreReadingUI Instance { get; private set; }
     public static bool IsAnyOpen => Instance != null && Instance._isOpen;
 
-    // ── UI 节点 ───────────────────────────────────────────────────────────────
+    // UI nodes
     GameObject _root;
     Text       _categoryText;
     Text       _titleText;
@@ -21,12 +22,12 @@ public sealed class LoreReadingUI : MonoBehaviour
     Button     _prevBtn;
     Button     _nextBtn;
 
-    // ── 运行时状态 ────────────────────────────────────────────────────────────
+    // Runtime state
     bool     _isOpen;
     string[] _pages;
     int      _pageIndex;
 
-    // ── 自动安装 ──────────────────────────────────────────────────────────────
+    // Auto-install on scene load
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void AutoCreate()
     {
@@ -45,7 +46,7 @@ public sealed class LoreReadingUI : MonoBehaviour
         go.AddComponent<LoreReadingUI>();
     }
 
-    // ── Unity 生命周期 ────────────────────────────────────────────────────────
+    // Unity lifecycle
     void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -59,7 +60,7 @@ public sealed class LoreReadingUI : MonoBehaviour
             Close();
     }
 
-    // ── 公开接口 ──────────────────────────────────────────────────────────────
+    // Public API
     public void Open(string category, string title, string[] pages)
     {
         if (pages == null || pages.Length == 0) return;
@@ -70,7 +71,7 @@ public sealed class LoreReadingUI : MonoBehaviour
         if (_categoryText != null) _categoryText.text = category;
         if (_titleText    != null) _titleText.text    = title;
         UpdateDisplay();
-        // 显示整个 Canvas（含全屏遮罩 + 内容面板）
+        // Show the whole canvas (dim overlay + content panel)
         gameObject.SetActive(true);
 
         Cursor.lockState = CursorLockMode.None;
@@ -80,13 +81,13 @@ public sealed class LoreReadingUI : MonoBehaviour
     public void Close()
     {
         _isOpen = false;
-        // 隐藏整个 Canvas，遮罩和内容面板同时消失
+        // Hide the whole canvas; the overlay and panel go away together
         gameObject.SetActive(false);
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible   = false;
     }
 
-    // ── 翻页 ──────────────────────────────────────────────────────────────────
+    // Paging
     void GoNext()
     {
         if (_pageIndex < _pages.Length - 1) { _pageIndex++; UpdateDisplay(); }
@@ -105,10 +106,10 @@ public sealed class LoreReadingUI : MonoBehaviour
         if (_nextBtn       != null) _nextBtn.interactable = _pageIndex < _pages.Length - 1;
     }
 
-    // ── UI 构建 ───────────────────────────────────────────────────────────────
+    // Builds the whole window once, at startup
     void BuildUI()
     {
-        // ── 根 Canvas ────────────────────────────────────────────────────────
+        // Root canvas
         var canvasGo = gameObject;
         var canvas   = canvasGo.AddComponent<Canvas>();
         canvas.renderMode  = RenderMode.ScreenSpaceOverlay;
@@ -119,7 +120,7 @@ public sealed class LoreReadingUI : MonoBehaviour
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         canvasGo.AddComponent<GraphicRaycaster>();
 
-        // ── 全屏暗色遮罩 ──────────────────────────────────────────────────────
+        // Full-screen dim overlay
         var overlayGo = MakeGo("Overlay", canvasGo);
         var overlayRt = overlayGo.GetComponent<RectTransform>();
         StretchFull(overlayRt);
@@ -127,7 +128,7 @@ public sealed class LoreReadingUI : MonoBehaviour
         overlayImg.color = new Color(0f, 0f, 0f, 0.72f);
         overlayGo.AddComponent<CanvasRenderer>();
 
-        // ── 主内容面板 ────────────────────────────────────────────────────────
+        // Main content panel
         _root = MakeGo("LorePanel", canvasGo);
         var panelRt = _root.GetComponent<RectTransform>();
         CenterPanel(panelRt, new Vector2(980f, 700f));
@@ -135,10 +136,10 @@ public sealed class LoreReadingUI : MonoBehaviour
         var panelImg = _root.AddComponent<Image>();
         panelImg.color = new Color(0.04f, 0.06f, 0.11f, 0.97f);
 
-        // 边框（亮色细边）
+        // Thin bright border
         AddBorder(_root, new Color(0.25f, 0.55f, 0.85f, 0.6f));
 
-        // ── 分类标签（顶部左侧，蓝色小字）────────────────────────────────────
+        // Category label — top-left, small blue text
         var catGo = MakeTextGo("Category", _root, 19, new Color(0.35f, 0.75f, 1f));
         var catRt = catGo.GetComponent<RectTransform>();
         catRt.anchorMin = new Vector2(0f, 1f);
@@ -150,7 +151,7 @@ public sealed class LoreReadingUI : MonoBehaviour
         _categoryText.alignment = TextAnchor.MiddleLeft;
         _categoryText.fontStyle = FontStyle.Italic;
 
-        // ── 标题（粗体白色）──────────────────────────────────────────────────
+        // Title — bold white
         var titleGo = MakeTextGo("Title", _root, 28, Color.white);
         var titleRt = titleGo.GetComponent<RectTransform>();
         titleRt.anchorMin = new Vector2(0f, 1f);
@@ -162,7 +163,7 @@ public sealed class LoreReadingUI : MonoBehaviour
         _titleText.alignment = TextAnchor.MiddleLeft;
         _titleText.fontStyle = FontStyle.Bold;
 
-        // ── 分割线 ────────────────────────────────────────────────────────────
+        // Divider line under the header
         var divGo  = MakeGo("Divider", _root);
         var divImg = divGo.AddComponent<Image>();
         divImg.color = new Color(0.25f, 0.55f, 0.85f, 0.45f);
@@ -174,7 +175,7 @@ public sealed class LoreReadingUI : MonoBehaviour
         divRt.sizeDelta = new Vector2(-60f, 2f);
         divRt.anchoredPosition = new Vector2(0f, -107f);
 
-        // ── 正文区域 ──────────────────────────────────────────────────────────
+        // Body text area
         var bodyGo = MakeTextGo("Body", _root, 19, new Color(0.87f, 0.87f, 0.80f));
         var bodyRt = bodyGo.GetComponent<RectTransform>();
         bodyRt.anchorMin = new Vector2(0f, 0f);
@@ -185,7 +186,7 @@ public sealed class LoreReadingUI : MonoBehaviour
         _bodyText.alignment  = TextAnchor.UpperLeft;
         _bodyText.lineSpacing = 1.45f;
 
-        // ── 页码 ──────────────────────────────────────────────────────────────
+        // Page counter
         var countGo = MakeTextGo("PageCount", _root, 17, new Color(0.45f, 0.55f, 0.65f));
         var countRt = countGo.GetComponent<RectTransform>();
         countRt.anchorMin = new Vector2(0.3f, 0f);
@@ -196,7 +197,7 @@ public sealed class LoreReadingUI : MonoBehaviour
         _pageCountText = countGo.GetComponent<Text>();
         _pageCountText.alignment = TextAnchor.MiddleCenter;
 
-        // ── 上一页按钮 ────────────────────────────────────────────────────────
+        // Prev button
         var prevGo = MakeButton("PrevBtn", _root, "◄  Prev",
             new Color(0.12f, 0.22f, 0.38f), new Color(0.6f, 0.85f, 1f));
         var prevRt = prevGo.GetComponent<RectTransform>();
@@ -207,7 +208,7 @@ public sealed class LoreReadingUI : MonoBehaviour
         _prevBtn = prevGo.GetComponent<Button>();
         _prevBtn.onClick.AddListener(GoPrev);
 
-        // ── 下一页按钮 ────────────────────────────────────────────────────────
+        // Next button
         var nextGo = MakeButton("NextBtn", _root, "Next  ►",
             new Color(0.12f, 0.22f, 0.38f), new Color(0.6f, 0.85f, 1f));
         var nextRt = nextGo.GetComponent<RectTransform>();
@@ -218,7 +219,7 @@ public sealed class LoreReadingUI : MonoBehaviour
         _nextBtn = nextGo.GetComponent<Button>();
         _nextBtn.onClick.AddListener(GoNext);
 
-        // ── 关闭按钮（右上角 ✕）─────────────────────────────────────────────
+        // Close button — top-right ✕
         var closeGo = MakeButton("CloseBtn", _root, "✕",
             new Color(0.28f, 0.10f, 0.10f), new Color(1f, 0.6f, 0.6f));
         var closeRt = closeGo.GetComponent<RectTransform>();
@@ -230,11 +231,11 @@ public sealed class LoreReadingUI : MonoBehaviour
         closeBtn.onClick.AddListener(Close);
         closeGo.GetComponentInChildren<Text>().fontSize = 22;
 
-        // 初始整个 Canvas 隐藏，避免全屏遮罩在 UI 未打开时影响画面亮度
+        // Start hidden so the dim overlay doesn't darken the screen before it opens
         gameObject.SetActive(false);
     }
 
-    // ── UI 辅助方法 ────────────────────────────────────────────────────────────
+    // UI helpers
     static GameObject MakeGo(string name, GameObject parent)
     {
         var go = new GameObject(name, typeof(RectTransform));
@@ -259,7 +260,7 @@ public sealed class LoreReadingUI : MonoBehaviour
 
     static void AddBorder(GameObject panel, Color color)
     {
-        // 用四条细长 Image 模拟外框线
+        // Fake a border out of four thin Image strips
         var rt    = panel.GetComponent<RectTransform>();
         float bw  = 1.5f;
         CreateEdge("B_Top",    panel, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, bw), color);

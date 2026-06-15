@@ -4,9 +4,9 @@ using UnityEngine.SceneManagement;
 namespace EchoesOfCelestia.Plane2D
 {
     /// <summary>
-    /// 飞机大战增强系统的统一入口：
-    /// 当 Level1_Scene 加载时自动注入所有 Enhancement 组件。
-    /// 不修改 2D 原项目的任何脚本/场景/预制体。
+    /// Single entry point for the plane-shooter enhancements: when Level1_Scene
+    /// loads it injects every Enhancement component automatically, without editing
+    /// any of the original 2D project's scripts, scenes or prefabs.
     /// </summary>
     public static class PlaneGameBootstrap
     {
@@ -58,8 +58,9 @@ namespace EchoesOfCelestia.Plane2D
         }
 
         /// <summary>
-        /// 必须在 GameManager.Start 之前执行（sceneLoaded 早于场景中脚本的 Start）。
-        /// 否则会触发 FigureOutHowManyEnemiesExist 的黄字警告。
+        /// Has to run before GameManager.Start — sceneLoaded fires earlier than
+        /// any in-scene Start. Skip it and FigureOutHowManyEnemiesExist spits out
+        /// its yellow warning.
         /// </summary>
         static void ApplyPlaneScenePatchesBeforeGameManagerStart()
         {
@@ -86,6 +87,6 @@ namespace EchoesOfCelestia.Plane2D
         }
     }
 
-    /// <summary>仅作为「已注入」标记。</summary>
+    /// <summary>Just a marker that says the enhancements are already injected.</summary>
     public sealed class PlaneGameEnhancementsRoot : MonoBehaviour { }
 }

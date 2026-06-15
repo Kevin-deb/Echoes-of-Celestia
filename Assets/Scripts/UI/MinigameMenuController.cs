@@ -3,7 +3,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
-/// 选关全屏 Canvas：打开时解锁鼠标；关闭时恢复（若仍在大厅可继续用第三人称锁定）。
+/// Full-screen level-select canvas. Frees the cursor while it's open and re-locks
+/// it on close, so third-person control picks back up if you're still in the hub.
 /// </summary>
 public sealed class MinigameMenuController : MonoBehaviour
 {

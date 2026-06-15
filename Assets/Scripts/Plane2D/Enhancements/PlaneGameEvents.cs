@@ -4,9 +4,9 @@ using UnityEngine;
 namespace EchoesOfCelestia.Plane2D
 {
     /// <summary>
-    /// 飞机大战增强模块的全局事件总线。
-    /// 所有 Enhancement 组件通过订阅这里的事件实现解耦协作，
-    /// 不需要修改 2D 原项目的任何脚本。
+    /// Global event bus for the plane-shooter enhancement modules. Every
+    /// Enhancement component talks through these events instead of referencing
+    /// one another, which keeps the original 2D project's scripts out of it.
     /// </summary>
     public static class PlaneGameEvents
     {

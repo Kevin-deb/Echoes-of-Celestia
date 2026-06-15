@@ -3,9 +3,9 @@ using UnityEngine;
 namespace EchoesOfCelestia.Plane2D
 {
     /// <summary>
-    /// 随时间推进逐渐降低 EnemySpawner.spawnDelay，提高敌人移动速度，
-    /// 模拟「波次进阶」的难度曲线。不直接修改原 EnemySpawner 字段定义，
-    /// 仅运行时调整其公共属性，保持原玩法基础上自然加压。
+    /// Ramps difficulty over time: shortens EnemySpawner.spawnDelay and pushes
+    /// enemy move speed up so each run gets steadily harder. It only adjusts the
+    /// existing public fields at runtime — the original EnemySpawner is untouched.
     /// </summary>
     public sealed class WaveDifficultyScaler : MonoBehaviour
     {

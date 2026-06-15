@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// 挂在塔防场景 UI 的「退出」按钮上，或任意对象上由 Button 调用。
+/// Wire this up to the tower-defence "Exit" button, or call it from any Button.
 /// </summary>
 public sealed class TDSceneExit : MonoBehaviour
 {

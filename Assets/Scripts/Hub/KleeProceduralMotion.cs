@@ -1,14 +1,15 @@
 using UnityEngine;
 
 /// <summary>
-/// 角色「程序化走路反馈」组件：
-/// 当 FBX 没有真正的动画 clip 时，用模型根节点的位移/旋转模拟走路与待机的视觉反馈。
-/// 一旦后续替换为带正式 walk/idle clip 的 FBX，可直接禁用此组件。
+/// Procedural "walk feel" for a character. When the FBX has no real animation
+/// clips, this fakes the walk and idle look by nudging the model root's position
+/// and rotation. Swap in an FBX with proper walk/idle clips later and you can just
+/// disable this component.
 /// </summary>
 public sealed class KleeProceduralMotion : MonoBehaviour
 {
     [Header("Source")]
-    [Tooltip("驱动的角色根（带 CharacterController 的 Player）。留空则自动取父级。")]
+    [Tooltip("Character root that drives the motion (the Player with a CharacterController). Leave empty to fall back to the parent.")]
     [SerializeField] Transform driverRoot;
 
     [Header("Walk Bob")]
